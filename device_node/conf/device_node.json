@@ -1,0 +1,10 @@
+{
+    "secret": "abc123",
+    "server_port": 4434,
+    "tls_cert_file": "./cert/fullchain.pem",
+    "tls_priv_key_file": "./cert/privkey.pem",
+    "max_conns": 32,
+    "conn_expire_time": 5000,
+    "multithreaded": true,
+    "debug_mode": true
+}

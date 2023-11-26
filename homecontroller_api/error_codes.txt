@@ -1,0 +1,9 @@
+100: Bad login credentials
+200: Bad session id
+300: Bad user id
+400: Bad ticket
+500: Module not found
+600: Bad request
+700: Bad auth header
+800: Bad device id
+900: Bad node id
