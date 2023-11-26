@@ -38,7 +38,7 @@ export default class UserManager {
         return this.getUserInfo('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
     }
 
-    public addDevice(userId: string, type: string, name: string, note: String): void {
+    public addDevice(userId: string, type: string, name: string, note: string): void {
 
     }
 

@@ -9,16 +9,23 @@
 namespace hc {
 namespace api {
     
-    void device::run(bool is_on) {
+    void device::run(state::power power, const std::string& state_data) {
+        state initial_state;
+        initial_state.set_power(power);
+        initial_state.set_data(state_data);
+
+        std::string initial_state_data = initial_state.serialize();
+
         client_packet auth_req_packet;
         auth_req_packet.set_message_id(0xABCD1234);
         auth_req_packet.set_opcode(client_packet::opcode::AUTHENTICATE);
         auth_req_packet.set_device_id(m_device_id);
 
         std::string data;
-        data.reserve(info::TICKET_LENGTH + 1);
-        data += (is_on) ? 0x00 : 0x01;
+        data.reserve(info::TICKET_LENGTH + initial_state_data.length());
+        //data += (is_on) ? 0x00 : 0x01;
         data += m_ticket;
+        data += initial_state_data;
 
         auth_req_packet.set_data_length(data.size());
         auth_req_packet.set_data(data);
@@ -59,24 +66,28 @@ namespace api {
                 return;
             }
 
+            std::string res_data = { 0x00 };
+
             switch(req_packet.get_opcode()) {
                 case hc::api::client_packet::opcode::ON:
-                    hc::util::logger::log("received turn on packet");
+                    m_turn_on_callback();
+                    m_state.set_power(hc::api::state::power::ON);
+                    send_notify_packet();
+                    hc::util::logger::dbg("received ON packet");
                     break;
                 case hc::api::client_packet::opcode::OFF:
-                    hc::util::logger::log("received turn off packet");
+                    m_turn_off_callback();
+                    m_state.set_power(hc::api::state::power::OFF);
+                    send_notify_packet();
+                    hc::util::logger::dbg("received OFF packet");
                     break;
                 case hc::api::client_packet::opcode::DATA:
-                    hc::util::logger::log("received data packet");
-                    break;
-                case hc::api::client_packet::opcode::GET_STATE:
-                    hc::util::logger::log("received get state packet");
+                    res_data = m_data_callback(req_packet.get_data());
+                    hc::util::logger::dbg("received DATA packet");
                     break;
                 default:
                     break;
             }
-
-            std::string res_data = "Hello, world!";
 
             client_packet res_packet;
             res_packet.set_message_id(req_packet.get_message_id());
@@ -94,6 +105,24 @@ namespace api {
             m_conn_ptr->close();
             m_running = false;
         }
+    }
+
+    void device::set_state(const state& state) {
+        m_state = state;
+        send_notify_packet();
+    }
+
+    void device::send_notify_packet() {
+        std::string state_data = m_state.serialize();
+       
+       client_packet notify_packet;
+       notify_packet.set_message_id(0x00000000);
+       notify_packet.set_opcode(hc::api::client_packet::opcode::NOTIFICATION);
+       notify_packet.set_device_id(m_device_id);
+       notify_packet.set_data_length(state_data.length());
+       notify_packet.set_data(state_data);
+
+       m_conn_ptr->send(notify_packet.serialize());
     }
 
 }

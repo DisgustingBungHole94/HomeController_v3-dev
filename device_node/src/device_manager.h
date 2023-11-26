@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <set>
 #include <homecontroller/net/ssl/server_connection.h>
+#include <homecontroller/api/state.h>
 
 class device_handler;
 class ws_handler;
@@ -46,8 +47,8 @@ class device {
         void set_id(const std::string& id) { m_id = id; }
         const std::string& get_id() { return m_id; }
 
-        void set_power(bool power) { m_power = power; }
-        bool get_power() { return m_power; }
+        void set_state(const hc::api::state& state) { m_state = state; }
+        const hc::api::state& get_state() { return m_state; }
 
         void set_device_handler(std::shared_ptr<device_handler> device_handler_ptr) { m_device_handler_ptr = device_handler_ptr; }
         std::shared_ptr<device_handler> get_device_handler() { return m_device_handler_ptr; }
@@ -55,7 +56,7 @@ class device {
     private:
         std::string m_id;
 
-        bool m_power;
+        hc::api::state m_state;
 
         std::shared_ptr<device_handler> m_device_handler_ptr;
 };

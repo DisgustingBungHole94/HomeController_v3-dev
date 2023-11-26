@@ -28,6 +28,8 @@ class ws_handler : public protocol_handler, public std::enable_shared_from_this<
         std::shared_ptr<hc::net::ws::server_wrapper> m_ws_wrapper_ptr;
 
         bool m_authenticated;
-        std::string m_user_id;
+        //std::string m_user_id;
+
+        std::shared_ptr<user> m_user_ptr;
 
 };

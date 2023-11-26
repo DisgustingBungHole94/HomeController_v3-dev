@@ -16,7 +16,7 @@ void ws_handler::init(const hc::net::ssl::server_conn_ptr& conn_ptr, const std::
 void ws_handler::on_destroyed(const state& state) {
     try {
         if (m_authenticated) {
-            state.m_device_manager->remove_user(m_user_id, shared_from_this());
+            state.m_device_manager->remove_user(m_user_ptr->get_id(), shared_from_this());
         }
     } catch(hc::exception& e) {
         hc::util::logger::err("failed to disconnect user: " + std::string(e.what()));
@@ -70,23 +70,14 @@ void ws_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr
         else {
             hc::util::logger::dbg("successfully authenticated!");
             m_authenticated = true;
-
-            std::shared_ptr<user> user_ptr = state.m_device_manager->get_user(m_user_id);
-            user_ptr->add_associated_handler(shared_from_this());
-
-            for (auto& x : user_ptr->get_devices()) {
-                char status = (x.second->get_power()) ? 0x01 : 0x02; // 0x01 for power on, 0x02 for power off
-                send_notification(x.first, { status });
-            }
-
+            
             res = hc::api::client_packet(hc::api::client_packet::opcode::AUTHENTICATE, { 0x00 });
         }
     }
 
     else {
         try {
-            std::shared_ptr<user> user_ptr = state.m_device_manager->get_user(m_user_id);
-            std::shared_ptr<device> device_ptr = user_ptr->get_device(packet.get_device_id());
+            std::shared_ptr<device> device_ptr = m_user_ptr->get_device(packet.get_device_id());
             
             if (device_ptr == nullptr) {
                 res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x04 }); // error code 0x04 for device not connected
@@ -95,18 +86,6 @@ void ws_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr
             else {
                 device_ptr->get_device_handler()->send_and_forward_response(m_ws_wrapper_ptr, m_ws_wrapper_ptr->get_last_message());
                 need_send = false;
-
-                bool on_opcode = (packet.get_opcode() == hc::api::client_packet::opcode::ON);
-                bool power_opcode = (on_opcode || (packet.get_opcode() == hc::api::client_packet::opcode::OFF));
-
-                if (power_opcode) {
-                    device_ptr->set_power(on_opcode);
-                    char status = (on_opcode) ? 0x01 : 0x02;
-
-                    for (auto& x : user_ptr->get_associated_handlers()) {
-                        x->send_notification(packet.get_device_id(), { status });
-                    }
-                }
             }
         } catch(hc::exception& e) {
             hc::util::logger::dbg("failed to forward message to device: " + std::string(e.what()));
@@ -133,10 +112,16 @@ bool ws_handler::authenticate(const state& state, const hc::api::client_packet& 
 
     try {
         hc::api::validate_user_response res = state.m_api_request_maker->validate_user(packet.get_data(), state.m_secret);
-        m_user_id = res.get_user_id();
+        m_user_ptr = state.m_device_manager->get_user(res.get_user_id());
     } catch(hc::exception& e) {
         hc::util::logger::dbg("failed to validate user ticket: " + std::string(e.what()));
         return false;
+    }
+
+    m_user_ptr->add_associated_handler(shared_from_this());
+
+    for (auto& x : m_user_ptr->get_devices()) {
+        send_notification(x.first, x.second->get_state().serialize());
     }
 
     return true;

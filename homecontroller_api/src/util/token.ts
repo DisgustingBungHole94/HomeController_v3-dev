@@ -4,7 +4,7 @@ export default function generateToken(length: number): string {
     let token: string = '';
 
     for (let i = 0; i < length; i++) {
-        token += chars.charAt(Math.floor(Math.random() * length));
+        token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
 
     return token;

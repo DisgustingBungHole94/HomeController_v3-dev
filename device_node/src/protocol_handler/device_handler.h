@@ -31,8 +31,11 @@ class device_handler : public protocol_handler, public std::enable_shared_from_t
         hc::net::ssl::server_conn_ptr m_conn_ptr;
 
         bool m_authenticated;
-        std::string m_user_id;
-        std::string m_device_id;
+
+        //std::string m_user_id;
+        //std::string m_device_id;
+        std::shared_ptr<user> m_user_ptr;
+        std::shared_ptr<device> m_device_ptr;
 
         std::queue<std::weak_ptr<hc::net::ws::server_wrapper>> m_user_message_queue;
 

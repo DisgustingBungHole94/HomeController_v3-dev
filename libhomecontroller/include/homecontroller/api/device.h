@@ -1,6 +1,7 @@
 #pragma once
 
 #include "homecontroller/net/ssl/client_connection.h"
+#include "homecontroller/api/state.h"
 
 #include <functional>
 #include <string>
@@ -15,13 +16,16 @@ namespace api {
             {}
 
             device(net::ssl::client_conn_ptr conn_ptr, const std::string& device_id, const std::string& ticket) 
-                : m_conn_ptr(conn_ptr), m_device_id(device_id), m_ticket(ticket), m_running(false), m_power(false)
+                : m_conn_ptr(conn_ptr), m_device_id(device_id), m_ticket(ticket), m_running(false)
             {}
 
             ~device() {}
 
-            void run(bool is_on);
+            void run(state::power power, const std::string& state_data);
             void stop();
+
+            void set_state(const state& state);
+            const state& get_state() { return m_state; }
 
             void set_turn_on_callback(std::function<void()> callback) { m_turn_on_callback = callback; }
             void set_turn_off_callback(std::function<void()> callback) { m_turn_off_callback = callback; }
@@ -31,6 +35,8 @@ namespace api {
             bool is_connected() { return (m_conn_ptr == nullptr) || !m_conn_ptr->is_closed(); }
 
         private:
+            void send_notify_packet();
+
             net::ssl::client_conn_ptr m_conn_ptr;
 
             std::function<void()> m_turn_on_callback;
@@ -43,7 +49,7 @@ namespace api {
 
             bool m_running;
 
-            bool m_power;
+            state m_state;
     };
 
 }

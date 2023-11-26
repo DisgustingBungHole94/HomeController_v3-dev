@@ -57,6 +57,9 @@ _HEADERS += api/message.h
 _OBJECTS += api/request_maker.o
 _HEADERS += api/request_maker.h
 
+_OBJECTS += api/state.o
+_HEADERS += api/state.h
+
 # http
 _HEADERS += http/common.h
 

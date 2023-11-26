@@ -20,16 +20,17 @@ void device_handler::init(const hc::net::ssl::server_conn_ptr& conn_ptr, const s
 }
 
 void device_handler::on_destroyed(const state& state) {
-    std::shared_ptr<user> user_ptr;
-
     try {
         if (m_authenticated) {
-            user_ptr = state.m_device_manager->get_user(m_user_id);
-            user_ptr->remove_device(m_device_id);
+            m_user_ptr->remove_device(m_device_ptr->get_id());
 
-            for(auto& x : user_ptr->get_associated_handlers()) {
+            hc::api::state disconnect_state;
+            disconnect_state.set_type(hc::api::state::type::DISCONNECT);
+            std::string data = disconnect_state.serialize();
+
+            for(auto& x : m_user_ptr->get_associated_handlers()) {
                 try {
-                    x->send_notification(m_device_id, { 0x00 });
+                    x->send_notification(m_device_ptr->get_id(), data);
                 } catch(hc::exception& e) {
                     hc::util::logger::err("failed to send disconnect notification: " + std::string(e.what()));
                 }
@@ -86,12 +87,16 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
         }
     }
 
-    else if (packet.get_opcode() != hc::api::client_packet::opcode::RESPONSE) {
-        hc::util::logger::dbg("device sent packet with opcode other than RESPONSE");
-        res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x03 }); // error code 0x03 for bad opcode
+    else if (packet.get_opcode() == hc::api::client_packet::opcode::NOTIFICATION) {
+        hc::api::state state;
+        try {
+            state.parse(packet.get_data());
+        } catch(hc::exception& e) {
+            hc::util::logger::dbg("failed to forward device notification: " + std::string(e.what()));
+        }
     }
 
-    else {
+    else if (packet.get_opcode() == hc::api::client_packet::opcode::RESPONSE) {
         std::weak_ptr<hc::net::ws::server_wrapper> user_conn_hdl = m_user_message_queue.front();
         std::shared_ptr<hc::net::ws::server_wrapper> user_conn_ptr;
 
@@ -107,6 +112,9 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
 
         m_user_message_queue.pop();
         need_send = false;
+    } else {
+        hc::util::logger::dbg("device sent packet with invalid opcode");
+        res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x03 }); // error code 0x03 for bad opcode
     }
 
     if (need_send) {
@@ -118,42 +126,49 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
 }
 
 bool device_handler::authenticate(const state& state, const hc::api::client_packet& packet) {
+    if (packet.get_data_length() < hc::api::info::TICKET_LENGTH + 2) {
+        hc::util::logger::dbg("bad auth packet");
+        return false;
+    }
+
+    hc::api::state initial_state;
+    std::string state_data = packet.get_data().substr(hc::api::info::TICKET_LENGTH);
+
+    try {
+        initial_state.parse(state_data);
+    } catch(hc::exception& e) {
+        hc::util::logger::dbg("failed to parse initial device state: " + std::string(e.what()));
+        return false;
+    }
+
     if (packet.get_opcode() != hc::api::client_packet::opcode::AUTHENTICATE) {
         hc::util::logger::dbg("client never sent auth ticket");
         return false;
     }
 
-    if (packet.get_data_length() < hc::api::info::TICKET_LENGTH + 1) {
-        hc::util::logger::dbg("bad ticket");
+    if (packet.get_data().size() < hc::api::info::TICKET_LENGTH + 2) {
+        hc::util::logger::dbg("bad auth packet");
         return false;
     }
 
-    if (packet.get_data().size() + 1 < hc::api::info::TICKET_LENGTH + 1) {
-        hc::util::logger::dbg("bad ticket");
-        return false;
-    }
-
-    std::string ticket = packet.get_data().substr(1, hc::api::info::TICKET_LENGTH);
+    std::string ticket = packet.get_data().substr(0, hc::api::info::TICKET_LENGTH);
 
     try {
         hc::api::validate_device_response res = state.m_api_request_maker->validate_device(ticket, state.m_secret);
-        m_user_id = res.get_user_id();
-        m_device_id = res.get_device_id();
+
+        m_user_ptr = state.m_device_manager->get_user(res.get_user_id());
+        m_device_ptr = m_user_ptr->add_device(res.get_device_id(), shared_from_this());
+        m_device_ptr->set_state(initial_state);
+
+        hc::util::logger::dbg("device is powered " + std::string((initial_state.get_power() == hc::api::state::power::ON) ? "on" : "off"));
+        hc::util::logger::dbg("device state data: " + initial_state.get_data());
     } catch(hc::exception& e) {
         hc::util::logger::dbg("failed to validate device ticket: " + std::string(e.what()));
         return false;
     }
 
-    std::shared_ptr<user> user_ptr = state.m_device_manager->get_user(m_user_id);
-    std::shared_ptr<device> device_ptr = user_ptr->add_device(m_device_id, shared_from_this());
-
-    bool power = (packet.get_data()[0] == 0x00);
-    device_ptr->set_power(power);
-
-    char status = (power) ? 0x01 : 0x02;
-
-    for(auto& x : user_ptr->get_associated_handlers()) {
-        x->send_notification(m_device_id, { status });
+    for(auto& x : m_user_ptr->get_associated_handlers()) {
+        x->send_notification(m_device_ptr->get_id(), packet.get_data());
     }
 
     return true;

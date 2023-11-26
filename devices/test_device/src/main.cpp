@@ -12,7 +12,7 @@ int main() {
         api.connect();
 
         device = api.login_device("test", "1234", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB");
-        device.run(false);
+        device.run(hc::api::state::power::OFF, "Hello, world!");
 
     } catch(hc::exception& e) {
         hc::util::logger::err(std::string(e.what()) + " (" + std::string(e.func()) + ")");
