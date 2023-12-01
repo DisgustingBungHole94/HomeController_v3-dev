@@ -1,22 +1,29 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const exception_1 = require("./util/exception");
+exports.AuthType = void 0;
 const token_1 = require("./util/token");
+var AuthType;
+(function (AuthType) {
+    AuthType[AuthType["CLIENT"] = 0] = "CLIENT";
+    AuthType[AuthType["NODE"] = 1] = "NODE";
+})(AuthType || (exports.AuthType = AuthType = {}));
+;
 class AuthManager {
     constructor() {
     }
-    parseAuthHeader(req) {
-        if (!req.headers.authorization) {
-            throw new exception_1.default('no auth header', 700);
+    parseAuthHeader(request) {
+        if (!request.headers.authorization) {
+            return null;
+            //throw new Exception('no auth header', 700);
         }
-        return '';
+        return 'abc123';
     }
     createSession(userId) {
         let token = (0, token_1.default)(32);
         return token;
     }
     validateSession(token) {
-        return '';
+        return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     }
     validateNode(secret) {
         return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC';

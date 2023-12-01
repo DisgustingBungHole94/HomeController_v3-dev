@@ -69,7 +69,7 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
     hc::api::client_packet res;
     bool need_send = true;
 
-    if (packet.get_magic() != 0xBEEF) {
+    if (packet.get_magic() != hc::api::info::MAGIC) {
         hc::util::logger::dbg("packet had invalid magic value");
         res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x01 }); // error code 0x01 for invalid protocol version
     }
@@ -89,14 +89,27 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
 
     else if (packet.get_opcode() == hc::api::client_packet::opcode::NOTIFICATION) {
         hc::api::state state;
+
         try {
             state.parse(packet.get_data());
+            m_device_ptr->set_state(state);
+
+            for (auto& x : m_user_ptr->get_associated_handlers()) {
+                x->send_notification(m_device_ptr->get_id(), packet.get_data());
+            }
         } catch(hc::exception& e) {
             hc::util::logger::dbg("failed to forward device notification: " + std::string(e.what()));
         }
+
+        need_send = false;
     }
 
     else if (packet.get_opcode() == hc::api::client_packet::opcode::RESPONSE) {
+        if (m_user_message_queue.empty()) {
+            state.m_server->close_connection(m_conn_ptr);
+            throw hc::exception("unrecoverable error; device is misbehaving", "hc::device_handler::on_data");
+        }
+
         std::weak_ptr<hc::net::ws::server_wrapper> user_conn_hdl = m_user_message_queue.front();
         std::shared_ptr<hc::net::ws::server_wrapper> user_conn_ptr;
 
@@ -126,28 +139,28 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
 }
 
 bool device_handler::authenticate(const state& state, const hc::api::client_packet& packet) {
-    if (packet.get_data_length() < hc::api::info::TICKET_LENGTH + 2) {
+    if (packet.get_opcode() != hc::api::client_packet::opcode::AUTHENTICATE) {
+        hc::util::logger::dbg("client never sent auth packet");
+        return false;
+    }
+    
+    if (packet.get_data_length() < hc::api::info::TICKET_LENGTH + hc::api::state::MIN_STATE_SIZE) {
         hc::util::logger::dbg("bad auth packet");
         return false;
     }
 
-    hc::api::state initial_state;
+    if (packet.get_data().size() < hc::api::info::TICKET_LENGTH + hc::api::state::MIN_STATE_SIZE) {
+        hc::util::logger::dbg("bad auth packet");
+        return false;
+    }
+
     std::string state_data = packet.get_data().substr(hc::api::info::TICKET_LENGTH);
+    hc::api::state initial_state;
 
     try {
         initial_state.parse(state_data);
     } catch(hc::exception& e) {
         hc::util::logger::dbg("failed to parse initial device state: " + std::string(e.what()));
-        return false;
-    }
-
-    if (packet.get_opcode() != hc::api::client_packet::opcode::AUTHENTICATE) {
-        hc::util::logger::dbg("client never sent auth ticket");
-        return false;
-    }
-
-    if (packet.get_data().size() < hc::api::info::TICKET_LENGTH + 2) {
-        hc::util::logger::dbg("bad auth packet");
         return false;
     }
 

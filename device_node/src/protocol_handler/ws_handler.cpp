@@ -57,7 +57,7 @@ void ws_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr
     hc::api::client_packet res;
     bool need_send = true;
 
-    if (packet.get_magic() != 0xBEEF) {
+    if (packet.get_magic() != hc::api::info::MAGIC) {
         hc::util::logger::dbg("packet had invalid magic value");
         res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x01 }); // error code 0x01 for invalid protocol version
     }

@@ -44,3 +44,9 @@ export interface ValidateDeviceResponse {
     userId: string,
     deviceId: string
 }
+
+export interface ReconnectUserResponse {
+    success: boolean,
+    nodes: Array<NodeTicket>,
+    devices: Array<Device>
+}

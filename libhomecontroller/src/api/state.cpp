@@ -6,8 +6,10 @@
 namespace hc {
 namespace api {
 
+    std::size_t state::MIN_STATE_SIZE = 2;
+
     void state::parse(const std::string& data) {
-        if (data.size() < 2) {
+        if (data.size() < MIN_STATE_SIZE) {
             throw exception("state too small", "hc::api::state::parse");
         }
 
@@ -30,7 +32,7 @@ namespace api {
 
     std::string state::serialize() const {
         std::string data;
-        data.reserve(2 + m_data.size());
+        data.reserve(MIN_STATE_SIZE + m_data.size());
 
         data += hc::util::bits::u8_to_str(static_cast<uint8_t>(m_type));
 

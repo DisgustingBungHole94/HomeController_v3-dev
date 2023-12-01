@@ -2,6 +2,19 @@
 #include <homecontroller/exception.h>
 #include <homecontroller/util/logger.h>
 
+void turn_on_callback() {
+    hc::util::logger::log("Turning on!");
+}
+
+void turn_off_callback() {
+    hc::util::logger::log("Turning off!");
+}
+
+std::string data_callback(std::string data) {
+    hc::util::logger::log("Received data: " + data);
+    return "Hello, world!";
+}
+
 int main() {
     hc::api::request_maker api;
     hc::api::device device;
@@ -12,6 +25,11 @@ int main() {
         api.connect();
 
         device = api.login_device("test", "1234", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB");
+
+        device.set_turn_on_callback(turn_on_callback);
+        device.set_turn_off_callback(turn_off_callback);
+        device.set_data_callback(data_callback);
+
         device.run(hc::api::state::power::OFF, "Hello, world!");
 
     } catch(hc::exception& e) {

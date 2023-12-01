@@ -19,9 +19,6 @@ namespace api {
                 NOTIFICATION    = 0x07
             };
 
-            static uint8_t _MIN_OPCODE;
-            static uint8_t _MAX_OPCODE;
-
             client_packet() 
                 : client_packet(opcode::ERROR, "")
             {}
@@ -63,6 +60,9 @@ namespace api {
             opcode m_opcode;            // 1 byte
             std::string m_device_id;    // 32 bytes (defined in hc::api::info::DEVICE_ID_LENGTH)
             uint32_t m_data_length;     // 4 bytes
+
+            static uint8_t _MIN_OPCODE;
+            static uint8_t _MAX_OPCODE;
 
             static std::size_t _PACKET_HEADER_SIZE;
 

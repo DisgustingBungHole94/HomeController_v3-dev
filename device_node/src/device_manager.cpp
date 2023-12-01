@@ -49,6 +49,8 @@ void user::add_associated_handler(std::shared_ptr<ws_handler> handler_ptr) {
     std::lock_guard<std::mutex> lock(m_mutex);
     
     m_associated_handlers.insert(handler_ptr);
+
+    hc::util::logger::log("user [" + m_id + "] connected");
 }
 
 void user::remove_associated_handler(std::shared_ptr<ws_handler> handler_ptr) {

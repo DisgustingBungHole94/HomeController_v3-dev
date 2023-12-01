@@ -15,6 +15,8 @@ namespace info {
     static const std::string NAME =                     "HomeController";
     static const std::string VERSION =                  "0.0.4";
 
+    static const uint16_t MAGIC =                       0xBEEF;
+
 #ifdef _WIN32
     static const std::string OS =                       "Windows";
 #endif

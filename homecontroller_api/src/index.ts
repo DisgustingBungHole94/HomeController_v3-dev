@@ -12,7 +12,8 @@ import {
             LoginUserResponse, 
             LoginDeviceResponse, 
             ValidateUserResponse, 
-            ValidateDeviceResponse 
+            ValidateDeviceResponse, 
+            ReconnectUserResponse
         } from './response'
 import AuthManager from './auth_manager';
 import UserManager from './user_manager';
@@ -128,7 +129,59 @@ app.post('/register_device', (req, res) => {
 });
 
 app.post('/reconnect/user', (req, res) => {
+    if (!req.body.token) {
+        res.status(400);
+        res.json(errorResponse('bad request', 600));
+        res.end();
+        return;
+    }
+    
+    let nodeId: string | undefined;
 
+    let clientSecret: string = authManager.parseAuthHeader(req);
+    if (clientSecret) {
+        res.status(400);
+        res.json(errorResponse('bad request', 600));
+        res.end();
+        return;
+    }
+
+    nodeId = authManager.validateNode(clientSecret);
+    if (clientSecret) {
+        res.status(400);
+        res.json(errorResponse('unauthorized', 700));
+        res.end();
+        return;
+    }
+
+    try {
+        let userId: string = authManager.validateSession(req.body.token);
+        let user: User = userManager.getUserInfo(userId);
+
+        let response: ReconnectUserResponse = {
+            success: true,
+            nodes: [],
+            devices: Array.from(user.devices.values()),
+        };
+
+        for (const [key, value] of user.nodes.entries()) {
+            let ticket = ticketService.createUserTicket(user.id, key);
+            response.nodes.push({
+                node: value,
+                ticket: ticket
+            });
+        }
+
+        Logger.log('user [' + user.id + '] reconnected');
+
+        res.status(200);
+        res.json(response);
+    } catch(e) {
+        res.status(400);
+        res.json(errorResponse('reconnect failed', e.getErrorCode()));
+    }
+
+    res.end();
 });
 
 app.post('/reconnect/device', (req, res) => {
@@ -137,21 +190,27 @@ app.post('/reconnect/device', (req, res) => {
 
 
 app.post('/validate_user', (req, res) => {
+    if (!req.body.ticket) {
+        res.status(400);
+        res.json(errorResponse('bad request', 600));
+        res.end();
+        return;
+    }
+    
     let nodeId: string;
 
-    try {
-        let nodeSecret: string = authManager.parseAuthHeader(req);
-        nodeId = authManager.validateNode(nodeSecret);
-    } catch(e) {
-        res.status(401);
-        res.json(errorResponse('unauthorized', 700));
+    let nodeSecret: string = authManager.parseAuthHeader(req);
+    if (!nodeSecret) {
+        res.status(400);
+        res.json(errorResponse('bad request', 600));
         res.end();
         return;
     }
 
-    if (!req.body.ticket) {
+    nodeId = authManager.validateNode(nodeSecret);
+    if (!nodeId) {
         res.status(400);
-        res.json(errorResponse('bad request', 600));
+        res.json(errorResponse('unauthorized', 700));
         res.end();
         return;
     }
@@ -175,21 +234,27 @@ app.post('/validate_user', (req, res) => {
 });
 
 app.post('/validate_device', (req, res) => {
+    if (!req.body.ticket) {
+        res.status(400);
+        res.json(errorResponse('bad request', 600));
+        res.end();
+        return;
+    }
+    
     let nodeId: string;
 
-    try {
-        let nodeSecret: string = authManager.parseAuthHeader(req);
-        nodeId = authManager.validateNode(nodeSecret);
-    } catch(e) {
-        res.status(401);
-        res.json(errorResponse('unauthorized', 700));
+    let nodeSecret: string = authManager.parseAuthHeader(req);
+    if (!nodeSecret) {
+        res.status(400);
+        res.json(errorResponse('bad request', 600));
         res.end();
         return;
     }
 
-    if (!req.body.ticket) {
+    nodeId = authManager.validateNode(nodeSecret);
+    if (!nodeId) {
         res.status(400);
-        res.json(errorResponse('bad request', 600));
+        res.json(errorResponse('unauthorized', 700));
         res.end();
         return;
     }

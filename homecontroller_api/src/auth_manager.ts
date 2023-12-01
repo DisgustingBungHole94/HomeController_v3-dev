@@ -1,17 +1,22 @@
 import Exception from './util/exception';
 import generateToken from './util/token';
 
+export enum AuthType {
+    CLIENT, NODE
+};
+
 export default class AuthManager {
     constructor() {
 
     }
 
-    public parseAuthHeader(req: any): string {
-        if (!req.headers.authorization) {
-            throw new Exception('no auth header', 700);
+    public parseAuthHeader(request: any): string | undefined {
+        if (!request.headers.authorization) {
+            return null
+            //throw new Exception('no auth header', 700);
         }
 
-        return '';
+        return 'abc123';
     }
 
     public createSession(userId: string): string {
@@ -20,11 +25,11 @@ export default class AuthManager {
         return token;
     }
 
-    public validateSession(token: string): string {
-        return '';
+    public validateSession(token: string): string | undefined {
+        return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     }
 
-    public validateNode(secret: string): string {
+    public validateNode(secret: string): string | undefined {
         return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC';
     }
 }

@@ -17,8 +17,10 @@ namespace api {
                 OFF         = 0x01
             };
 
+            static std::size_t MIN_STATE_SIZE;
+
             state() 
-                : m_type(hc::api::state::type::DATA), m_power(hc::api::state::power::OFF), m_data("")
+                : m_type(type::DATA), m_power(power::OFF), m_data("")
             {}
 
             ~state() {}
