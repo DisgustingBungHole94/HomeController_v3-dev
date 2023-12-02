@@ -1,36 +1,36 @@
 import { Exception } from '@/deps/hc/util/exception';
 import * as bits from '@/deps/hc/util/bits';
 
-export enum StateType {
+/*export enum StateType {
     DATA        = 0x00, 
     DISCONNECT  = 0x01
-}
+}*/
 
 export enum StatePower {
     ON          = 0x00,
     OFF         = 0x01
 }
 
-const MIN_STATE_SIZE: number = 2;
+const MIN_STATE_SIZE: number = 1;
 
 export class State {
-    private type: StateType;
+    //private type: StateType;
     private power: StatePower;
     private data: Uint8Array;
 
     constructor() {
-        this.type = StateType.DISCONNECT;
+        //this.type = StateType.DISCONNECT;
         this.power = StatePower.OFF;
         this.data = new Uint8Array(0);
     }
 
-    public setType(type: StateType) {
+    /*public setType(type: StateType) {
         this.type = type;
     }
 
     public getType(): StateType {
         return this.type;
-    }
+    }*/
 
     public setPower(power: StatePower) {
         this.power = power;
@@ -54,21 +54,21 @@ export class State {
             //throw new Exception('state too small', 'State::parse');
         }
 
-        if (data[0] < 0 || data[0] > 1) {
+        /*if (data[0] < 0 || data[0] > 1) {
             return false;
             //throw new Exception('invalid state type', 'State::parse');
         }
 
-        this.type = data[0];
+        this.type = data[0];*/
 
-        if (data[1] < 0 || data[1] > 1) {
+        if (data[0] < 0 || data[0] > 1) {
             return false;
             //throw new Exception('invalid power code', 'State::parse');
         }
 
-        this.power = data[1];
+        this.power = data[0];
 
-        this.data = data.slice(2);
+        this.data = data.slice(MIN_STATE_SIZE);
 
         return true;
     }
@@ -76,10 +76,10 @@ export class State {
     public serialize(): Uint8Array {
         let array = new Uint8Array(MIN_STATE_SIZE + this.data.length);
 
-        array[0] = this.type;
-        array[1] = this.power;
+        //array[0] = this.type;
+        array[0] = this.power;
 
-        array.set(this.data, 2);
+        array.set(this.data, MIN_STATE_SIZE);
 
         return array;
     }

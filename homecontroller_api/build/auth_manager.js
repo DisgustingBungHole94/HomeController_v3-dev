@@ -11,7 +11,7 @@ var AuthType;
 class AuthManager {
     constructor() {
     }
-    parseAuthHeader(request) {
+    parseAuthHeader(request, expectedType) {
         if (!request.headers.authorization) {
             return null;
             //throw new Exception('no auth header', 700);

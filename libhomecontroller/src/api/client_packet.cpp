@@ -11,7 +11,7 @@ namespace hc {
 namespace api {
 
     uint8_t client_packet::_MIN_OPCODE = 0x00;
-    uint8_t client_packet::_MAX_OPCODE = 0x07;
+    uint8_t client_packet::_MAX_OPCODE = 0x09;
     std::size_t client_packet::_PACKET_HEADER_SIZE = 11 + info::DEVICE_ID_LENGTH;
     std::size_t client_packet::_MAX_DATA_LENGTH = 4096;
 

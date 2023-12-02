@@ -10,9 +10,9 @@ export default class AuthManager {
 
     }
 
-    public parseAuthHeader(request: any): string | undefined {
+    public parseAuthHeader(request: any, expectedType: AuthType): string | undefined {
         if (!request.headers.authorization) {
-            return null
+            return null;
             //throw new Exception('no auth header', 700);
         }
 

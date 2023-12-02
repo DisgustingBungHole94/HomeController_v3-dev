@@ -24,13 +24,9 @@ void device_handler::on_destroyed(const state& state) {
         if (m_authenticated) {
             m_user_ptr->remove_device(m_device_ptr->get_id());
 
-            hc::api::state disconnect_state;
-            disconnect_state.set_type(hc::api::state::type::DISCONNECT);
-            std::string data = disconnect_state.serialize();
-
             for(auto& x : m_user_ptr->get_associated_handlers()) {
                 try {
-                    x->send_notification(m_device_ptr->get_id(), data);
+                    x->send_disconnect_packet(m_device_ptr->get_id());
                 } catch(hc::exception& e) {
                     hc::util::logger::err("failed to send disconnect notification: " + std::string(e.what()));
                 }
@@ -95,7 +91,7 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
             m_device_ptr->set_state(state);
 
             for (auto& x : m_user_ptr->get_associated_handlers()) {
-                x->send_notification(m_device_ptr->get_id(), packet.get_data());
+                x->send_notification_packet(m_device_ptr->get_id(), packet.get_data());
             }
         } catch(hc::exception& e) {
             hc::util::logger::dbg("failed to forward device notification: " + std::string(e.what()));
@@ -181,7 +177,7 @@ bool device_handler::authenticate(const state& state, const hc::api::client_pack
     }
 
     for(auto& x : m_user_ptr->get_associated_handlers()) {
-        x->send_notification(m_device_ptr->get_id(), packet.get_data());
+        x->send_connect_packet(m_device_ptr->get_id(), state_data);
     }
 
     return true;

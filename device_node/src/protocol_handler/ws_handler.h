@@ -18,7 +18,9 @@ class ws_handler : public protocol_handler, public std::enable_shared_from_this<
 
         void on_destroyed(const state& state) override;
 
-        void send_notification(const std::string& device_id, const std::string& data);
+        void send_connect_packet(const std::string& device_id, const std::string& data);
+        void send_disconnect_packet(const std::string& device_id);
+        void send_notification_packet(const std::string& device_id, const std::string& data);
 
     private:
         void on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data) override;

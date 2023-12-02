@@ -63,8 +63,8 @@ export interface LoginUserResponse {
     success: boolean,
     userId: string,
     username: string,
-    nodes: Array<NodeTicket>,
-    devices: Array<Device>,
+    //nodes: Array<NodeTicket>,
+    //devices: Array<Device>,
     token: string
 };
 
@@ -73,7 +73,7 @@ function isLoginUserResponse(obj: any): boolean {
     if (typeof obj.userId !== 'string') return false;
     if (typeof obj.username !== 'string') return false;
 
-    if (!Array.isArray(obj.nodes)) return false;
+    /*if (!Array.isArray(obj.nodes)) return false;
     obj.nodes.forEach((elem: any) => {
         if (typeof elem.node !== 'object') return false;
         if (typeof elem.node.id !== 'string') return false;
@@ -89,7 +89,7 @@ function isLoginUserResponse(obj: any): boolean {
         if (typeof elem.type !== 'string') return false;
         if (typeof elem.name !== 'string') return false;
         if (typeof elem.note !== 'string') return false;
-    });
+    });*/
 
     if (typeof obj.token !== 'string') return false;
 
@@ -126,13 +126,13 @@ export async function loginUser(username: string, password: string): Promise<Log
     });
 }
 
-export interface ReconnectUserResponse {
+export interface ConnectUserResponse {
     success: boolean,
     nodes: Array<NodeTicket>,
     devices: Array<Device>
 };
 
-function isReconnectUserResponse(obj: any): boolean {
+function isConnectUserResponse(obj: any): boolean {
     if (typeof obj.success !== 'boolean') return false;
 
     if (!Array.isArray(obj.nodes)) return false;
@@ -156,31 +156,29 @@ function isReconnectUserResponse(obj: any): boolean {
     return true;
 }
 
-export async function reconnectUser(token: string): Promise<ReconnectUserResponse> {
-    return new Promise<ReconnectUserResponse>(async (resolve, reject) => {
+export async function connectUser(token: string): Promise<ConnectUserResponse> {
+    return new Promise<ConnectUserResponse>(async (resolve, reject) => {
         const requestData: RequestData = {
-            url: '/reconnect/user',
+            url: '/connect/user',
             method: 'post',
-            data: {
-                token: token
-            }
+            token: token
         };
         
         makeRequest(apiHost, apiPort, requestData)
             .then((response) => {
-                if (!isReconnectUserResponse(response)) {
-                    reject(new Exception('bad server response', 'reconnectUser'));
+                if (!isConnectUserResponse(response)) {
+                    reject(new Exception('bad server response', 'connectUser'));
                 }
 
-                let responseData: ReconnectUserResponse = response as ReconnectUserResponse;
+                let responseData: ConnectUserResponse = response as ConnectUserResponse;
                 if (!responseData.success) {
-                    reject(new Exception('request failed', 'reconnectUser'));
+                    reject(new Exception('request failed', 'connectUser'));
                 }
 
                 resolve(responseData);
             })
             .catch(() => {
-                reject(new Exception('reconnect request failed', 'reconnectUser'));
+                reject(new Exception('connect request failed', 'connectUser'));
             })
     });
 }

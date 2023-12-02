@@ -16,7 +16,9 @@ namespace api {
                 GET_STATE       = 0x04,
                 RESPONSE        = 0x05,
                 ERROR           = 0x06,
-                NOTIFICATION    = 0x07
+                NOTIFICATION    = 0x07,
+                CONNECT         = 0x08,
+                DISCONNECT      = 0x09
             };
 
             client_packet() 

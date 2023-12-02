@@ -27,18 +27,20 @@ export default function LoginPage() {
 
         try {
             const loginUserResponse: LoginUserResponse = await loginUser('test', '1234');
-            document.cookie = 'token=' + loginUserResponse.token + '; path=/login';
+            document.cookie = 'token=' + loginUserResponse.token + '; path=/';
 
-            setSuccessMessage('Connecting...');
-
-            myConnManager.connect(loginUserResponse.nodes)
+            /*myConnManager.connect(loginUserResponse.nodes, )
             .then(() => {
                 setSuccessMessage('Logged in!');
                 router.push('/home/devices');
             })
             .catch(() => {
                 setErrorMessage('Unable to connect to server!');
-            });
+            });*/
+
+            setSuccessMessage('Logged in!');
+
+            router.push('/home/devices');
         } catch(e) {
             setErrorMessage('Login failed!');
         }

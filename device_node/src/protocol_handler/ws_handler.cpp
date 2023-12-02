@@ -23,7 +23,27 @@ void ws_handler::on_destroyed(const state& state) {
     }
 }
 
-void ws_handler::send_notification(const std::string& device_id, const std::string& data) {
+void ws_handler::send_connect_packet(const std::string& device_id, const std::string& data) {
+    hc::api::client_packet packet;
+    packet.set_message_id(0x00000000);
+    packet.set_device_id(device_id);
+    packet.set_opcode(hc::api::client_packet::opcode::CONNECT);
+    packet.set_data_length(data.size());
+    packet.set_data(data);
+
+    m_ws_wrapper_ptr->send(packet.serialize());
+}
+
+void ws_handler::send_disconnect_packet(const std::string& device_id) {
+    hc::api::client_packet packet;
+    packet.set_message_id(0x00000000);
+    packet.set_device_id(device_id);
+    packet.set_opcode(hc::api::client_packet::opcode::DISCONNECT);
+
+    m_ws_wrapper_ptr->send(packet.serialize());
+}
+
+void ws_handler::send_notification_packet(const std::string& device_id, const std::string& data) {
     hc::api::client_packet packet;
     packet.set_message_id(0x00000000);
     packet.set_device_id(device_id);
@@ -121,7 +141,7 @@ bool ws_handler::authenticate(const state& state, const hc::api::client_packet& 
     m_user_ptr->add_associated_handler(shared_from_this());
 
     for (auto& x : m_user_ptr->get_devices()) {
-        send_notification(x.first, x.second->get_state().serialize());
+        send_connect_packet(x.first, x.second->get_state().serialize());
     }
 
     return true;

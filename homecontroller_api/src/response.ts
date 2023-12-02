@@ -20,8 +20,8 @@ export interface LoginUserResponse {
     success: boolean,
     userId: string,
     username: string,
-    nodes: Array<NodeTicket>,
-    devices: Array<Device>,
+    //nodes: Array<NodeTicket>,
+    //devices: Array<Device>,
     token: string
 }
 
@@ -45,7 +45,7 @@ export interface ValidateDeviceResponse {
     deviceId: string
 }
 
-export interface ReconnectUserResponse {
+export interface ConnectUserResponse {
     success: boolean,
     nodes: Array<NodeTicket>,
     devices: Array<Device>

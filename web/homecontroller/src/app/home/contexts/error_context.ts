@@ -1,3 +1,8 @@
-import { Dispatch, createContext } from 'react';
+import { Dispatch, SetStateAction, createContext } from 'react';
 
-export const ErrorContext = createContext<[string, Dispatch<string>] | null>(null);
+export interface ErrorInfo {
+    error: string,
+    setError: Dispatch<SetStateAction<string>>
+};
+
+export const ErrorContext = createContext<ErrorInfo | null>(null);

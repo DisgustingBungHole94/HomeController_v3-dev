@@ -7,6 +7,7 @@ const cors = require("cors");
 const logger_1 = require("./util/logger");
 const response_1 = require("./response");
 const auth_manager_1 = require("./auth_manager");
+const auth_manager_2 = require("./auth_manager");
 const user_manager_1 = require("./user_manager");
 const ticket_service_1 = require("./ticket_service");
 const authManager = new auth_manager_1.default();
@@ -31,17 +32,17 @@ app.post('/login/user', (req, res) => {
             success: true,
             userId: user.id,
             username: user.username,
-            nodes: [],
-            devices: Array.from(user.devices.values()),
+            //nodes: [],
+            //devices: Array.from(user.devices.values()),
             token: token
         };
-        for (const [key, value] of user.nodes.entries()) {
+        /*for (const [key, value] of user.nodes.entries()) {
             let ticket = ticketService.createUserTicket(user.id, key);
             response.nodes.push({
                 node: value,
                 ticket: ticket
             });
-        }
+        }*/
         logger_1.Logger.log('created session [' + response.token + '] for user [' + response.username + ']');
         res.status(200);
         res.json(response);
@@ -97,23 +98,23 @@ app.post('/login/device', (req, res) => {
 });
 app.post('/register_device', (req, res) => {
 });
-app.post('/reconnect/user', (req, res) => {
-    if (!req.body.token) {
+app.post('/connect/user', (req, res) => {
+    /*if (!req.body.token) {
         res.status(400);
-        res.json((0, response_1.errorResponse)('bad request', 600));
+        res.json(errorResponse('bad request', 600));
         res.end();
         return;
-    }
+    }*/
     let nodeId;
-    let clientSecret = authManager.parseAuthHeader(req);
-    if (clientSecret) {
+    let clientToken = authManager.parseAuthHeader(req, auth_manager_2.AuthType.CLIENT);
+    if (!clientToken) {
         res.status(400);
         res.json((0, response_1.errorResponse)('bad request', 600));
         res.end();
         return;
     }
-    nodeId = authManager.validateNode(clientSecret);
-    if (clientSecret) {
+    nodeId = authManager.validateNode(clientToken);
+    if (!nodeId) {
         res.status(400);
         res.json((0, response_1.errorResponse)('unauthorized', 700));
         res.end();
@@ -134,13 +135,13 @@ app.post('/reconnect/user', (req, res) => {
                 ticket: ticket
             });
         }
-        logger_1.Logger.log('user [' + user.id + '] reconnected');
+        logger_1.Logger.log('user [' + user.id + '] connected');
         res.status(200);
         res.json(response);
     }
     catch (e) {
         res.status(400);
-        res.json((0, response_1.errorResponse)('reconnect failed', e.getErrorCode()));
+        res.json((0, response_1.errorResponse)('connect failed', e.getErrorCode()));
     }
     res.end();
 });
@@ -154,7 +155,7 @@ app.post('/validate_user', (req, res) => {
         return;
     }
     let nodeId;
-    let nodeSecret = authManager.parseAuthHeader(req);
+    let nodeSecret = authManager.parseAuthHeader(req, auth_manager_2.AuthType.NODE);
     if (!nodeSecret) {
         res.status(400);
         res.json((0, response_1.errorResponse)('bad request', 600));
@@ -191,7 +192,7 @@ app.post('/validate_device', (req, res) => {
         return;
     }
     let nodeId;
-    let nodeSecret = authManager.parseAuthHeader(req);
+    let nodeSecret = authManager.parseAuthHeader(req, auth_manager_2.AuthType.NODE);
     if (!nodeSecret) {
         res.status(400);
         res.json((0, response_1.errorResponse)('bad request', 600));

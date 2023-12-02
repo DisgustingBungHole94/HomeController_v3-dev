@@ -9,13 +9,15 @@ export enum Opcode {
     GET_STATE =     0x04,
     RESPONSE =      0x05,
     ERROR =         0x06,
-    NOTIFICATION =  0x07
+    NOTIFICATION =  0x07,
+    CONNECT =       0x08,
+    DISCONNECT =    0x09
 };
 
 export const MAGIC: number = 0xBEEF;
 
 const MIN_OPCODE: number = 0x00;
-const MAX_OPCODE: number = 0x07;
+const MAX_OPCODE: number = 0x09;
 const DEVICE_ID_LENGTH: number = 32;
 const PACKET_HEADER_SIZE: number = 11 + DEVICE_ID_LENGTH;
 const MAX_DATA_LENGTH: number = 4096;

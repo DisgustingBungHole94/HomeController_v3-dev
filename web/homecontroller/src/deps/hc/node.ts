@@ -1,16 +1,25 @@
 import { ClientPacket, Opcode } from '@/deps/hc/client_packet';
-import { State, StateType } from '@/deps/hc/state';
+import { State } from '@/deps/hc/state';
 import { Exception } from '@/deps/hc/util/exception';
 import { Device, NodeTicket } from '@/deps/hc/api_requests'
 
-import { DeviceListState, DeviceState } from '@/app/home/contexts/device_context'
+//import { DeviceListState, DeviceList, DeviceState, emptyDeviceList, updateDeviceList } from '@/app/home/contexts/device_context'
 
-import { useState, Dispatch, SetStateAction } from 'react';
+type ConnectCallback = (device: Device, state: State) => void;
+type DisconnectCallback = (device: Device) => void;
+type StateUpdateCallback = (device: Device, state: State) => void;
 
+export interface DeviceInfo {
+    device: Device,
+    onConnect: ConnectCallback,
+    onDisconnect: DisconnectCallback,
+    onStateUpdate: StateUpdateCallback
+};
 
 class NodeConnection {
-    public state: DeviceListState;
     public onClose: () => void;
+
+    private deviceList: Map<string, DeviceInfo>;
 
     private host: string;
     private port: string;
@@ -22,9 +31,10 @@ class NodeConnection {
     private connected: boolean;
     private authenticated: boolean;
 
-    constructor(host: string, port: string, state: DeviceListState) {
-        this.state = state;
+    constructor(host: string, port: string, deviceList: Map<string, DeviceInfo>) {
         this.onClose = () => {};
+
+        this.deviceList = deviceList;
         
         this.host = host;
         this.port = port;
@@ -74,6 +84,12 @@ class NodeConnection {
                     case Opcode.NOTIFICATION:
                         this.handleNotification(packet);
                         break;
+                    case Opcode.CONNECT:
+                        this.handleConnect(packet);
+                        break;
+                    case Opcode.DISCONNECT:
+                        this.handleDisconnect(packet);
+                        break;
                     default:
                         if (!this.authenticated) {
                             reject();
@@ -117,29 +133,48 @@ class NodeConnection {
         });
     }
 
-    private handleNotification(packet: ClientPacket): boolean {
+    private handleNotification(packet: ClientPacket): boolean {    
         const state = new State();
         if (!state.parse(packet.getData())) {
             return false;
-        }                        
-
-        // do stuff with state
-        let deviceList: Map<string, DeviceState> = this.state[0];
-
-        switch(state.getType()) {
-            case StateType.DATA:
-                let updateList = new Map(deviceList);
-                let updateState = deviceList.get(packet.getDeviceIdAsStr());
-                if (updateState) {
-                    updateState.state = state;
-                    updateList.set(updateState.device.id, updateState);
-                    this.state[1](updateList);
-                }
-                break;
-            case StateType.DISCONNECT:
-                break;
         }
 
+        // do stuff with state
+        let deviceInfo: DeviceInfo | undefined = this.deviceList.get(packet.getDeviceIdAsStr());
+        if (!deviceInfo) {
+            return false;
+        }
+
+        deviceInfo.onStateUpdate(deviceInfo.device, state);
+
+        return true;
+    }
+
+    private handleConnect(packet: ClientPacket): boolean {
+        const state = new State();
+        if (!state.parse(packet.getData())) {
+            return false;
+        }
+
+        // do stuff with state
+        let deviceInfo: DeviceInfo | undefined = this.deviceList.get(packet.getDeviceIdAsStr());
+        if (!deviceInfo) {
+            return false;
+        }
+
+        deviceInfo.onConnect(deviceInfo.device, state);
+
+        return true;
+    }
+
+    private handleDisconnect(packet: ClientPacket): boolean {
+        let deviceInfo: DeviceInfo | undefined = this.deviceList.get(packet.getDeviceIdAsStr());
+        if (!deviceInfo) {
+            return false;
+        }
+
+        deviceInfo.onDisconnect(deviceInfo.device);
+        
         return true;
     }
 
@@ -183,9 +218,10 @@ class NodeConnection {
         return true;
     }
 }
-
 class NodeConnectionManager {
     public onDisconnect: () => void;
+
+    private deviceList: Map<string, DeviceInfo>;
 
     private connections: Map<string, NodeConnection>;
     private connected: boolean;
@@ -193,29 +229,33 @@ class NodeConnectionManager {
     constructor() {
         this.onDisconnect = () => {};
 
+        this.deviceList = new Map<string, DeviceInfo>();
+
         this.connections = new Map<string, NodeConnection>();
         this.connected = false;
     }
 
     public isConnected(): boolean {
         return this.connected;
-;    }
+    }
 
-    public async connect(nodes: Array<NodeTicket>, devices: Array<Device>, state: DeviceListState) {
-        let deviceMap = new Map<string, DeviceState>();
+    public setDeviceList(devices: Array<Device>) {
         devices.forEach((device) => {
-            let deviceState: DeviceState = {
+            let deviceState = {
                 device: device,
-                state: new State()
+                onConnect: () => void {},
+                onDisconnect: () => void {},
+                onStateUpdate: () => void {}
             };
-            deviceState.state.setType(StateType.DISCONNECT);
 
-            deviceMap.set(device.id, deviceState);
+            this.deviceList.set(device.id, deviceState);
         });
-        
+    }
+
+    public async connect(nodes: Array<NodeTicket>) {        
         for(let i = 0; i < nodes.length; i++) {
             if (!this.connections.has(nodes[i].node.id)) {
-                const connection = new NodeConnection(nodes[i].node.host, nodes[i].node.port, state);
+                const connection = new NodeConnection(nodes[i].node.host, nodes[i].node.port, this.deviceList);
 
                 await connection.connect(nodes[i].ticket, );
                 this.connections.set(nodes[i].node.id, connection);
@@ -236,6 +276,23 @@ class NodeConnectionManager {
                 .then((packet) => resolve(packet))
                 .catch(() => reject());
         });
+    }
+
+    public setAllCallbacks(stateUpdateCallback: StateUpdateCallback, connectCallback: ConnectCallback, disconnectCallback: DisconnectCallback) {
+        this.deviceList.forEach((deviceState: DeviceInfo) => {
+            deviceState.onStateUpdate = stateUpdateCallback;
+            deviceState.onConnect = connectCallback;
+            deviceState.onDisconnect = disconnectCallback;
+        });
+    }
+
+    public setStateUpdateCallback(deviceId: string, callback: StateUpdateCallback) {
+        const device = this.deviceList.get(deviceId);
+        if (!device) {
+            return;
+        } 
+
+        device.onStateUpdate = callback;
     }
 }
 
