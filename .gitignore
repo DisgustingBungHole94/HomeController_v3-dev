@@ -1,6 +1,9 @@
+
+*/.DS_store
 **/.DS_store
 old/
-.vscode/
+*/.vscode/
+**/.vscode/
 bin/
 cert/
 build/
