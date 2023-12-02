@@ -252,10 +252,20 @@ class NodeConnectionManager {
         });
     }
 
-    public async connect(nodes: Array<NodeTicket>) {        
+    public getDeviceList(): Map<string, DeviceInfo> {
+        return this.deviceList;
+    }
+
+    public async connect(nodes: Array<NodeTicket>) { 
+        const onCloseCallback = () => {
+            this.connected = false;
+            this.onDisconnect();
+        };
+        
         for(let i = 0; i < nodes.length; i++) {
             if (!this.connections.has(nodes[i].node.id)) {
                 const connection = new NodeConnection(nodes[i].node.host, nodes[i].node.port, this.deviceList);
+                connection.onClose = onCloseCallback;
 
                 await connection.connect(nodes[i].ticket, );
                 this.connections.set(nodes[i].node.id, connection);

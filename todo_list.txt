@@ -1,0 +1,6 @@
+The Todo List:
+
+1. device_node: Cleanup device_handler and ws_handler, refactor similar to how packets are processed in node.tsx
+2. homecontroller_api: Remove /login/device & /login/user in favor of unified login request
+3. homecontroller_api: Add /connect/device
+4. homecontroller_api: Setup mongo.db

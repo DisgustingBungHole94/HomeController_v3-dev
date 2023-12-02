@@ -17,9 +17,10 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
     const [devices, setDevices] = useState<DeviceList>(emptyDeviceList());
 
     const router = useRouter();
-
+    
     myConnManager.onDisconnect = () => {
-        setError('Unable to connect to server!');
+        setDevices(emptyDeviceList());
+        setError('Lost connection with server! Please refresh!');
     };
 
     const onDeviceStateUpdate = (device: Device, state: State) => {
@@ -82,7 +83,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
                 
                 await myConnManager.connect(connectUserResponse.nodes);
             } catch(e) {
-                console.log(e);
+                setDevices(emptyDeviceList());
                 setError('Unable to connect to server!');
             }
         } else {
@@ -96,6 +97,24 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
 
     return (
         <div>
+            <div>
+                {error && (
+                    <div role="alert">
+                        <div className="bg-red-500 text-white font-bold rounded-t px-4 py-2">
+                            Warning
+                            <button
+                                onClick={ () => setError('') }
+                                className="bg-red-800 text-white rounded px-1 px-1 float-right"
+                            >
+                                X
+                            </button>
+                        </div>
+                        <div className="border border-t-0 border-red-400 rounded-b bg-red-100 px-4 py-3 text-red-500">
+                            {error}
+                        </div>
+                    </div>
+                )}
+            </div>
             <ErrorContext.Provider value={{ error: error, setError: setError }}>
             <DeviceContext.Provider value={ devices }>
                 {children}
