@@ -20,13 +20,15 @@ export interface DeviceState {
 
 export interface DeviceList {
     onlineDevices: Map<string, DeviceState>,
-    offlineDevices: Map<string, Device>
+    offlineDevices: Map<string, Device>,
+    loading: boolean
 }
 
 export function emptyDeviceList(): DeviceList {
     let list: DeviceList = {
         onlineDevices: new Map<string, DeviceState>(),
-        offlineDevices: new Map<string, Device>()
+        offlineDevices: new Map<string, Device>(),
+        loading: true
     };
     
     return list;

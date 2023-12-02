@@ -17,7 +17,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
     const [devices, setDevices] = useState<DeviceList>(emptyDeviceList());
 
     const router = useRouter();
-    
+
     myConnManager.onDisconnect = () => {
         setDevices(emptyDeviceList());
         setError('Lost connection with server! Please refresh!');
@@ -38,7 +38,8 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
     const updateDevicesState = (device: Device, state: State | null, online: boolean) => {
         let newList: DeviceList = { 
             onlineDevices: new Map<string, DeviceState>(devices.onlineDevices),
-            offlineDevices: new Map<string, Device>(devices.offlineDevices)
+            offlineDevices: new Map<string, Device>(devices.offlineDevices),
+            loading: false
         };
     
         if (online) {
