@@ -94,8 +94,13 @@ namespace ssl {
                 epoll_data* data_ptr = static_cast<epoll_data*>(events[i].data.ptr);
 
                 // server closed
-                if (data_ptr->m_fd == m_close_fd_r && !m_running) {
-                    break;
+                if (data_ptr->m_fd == m_close_fd_r) {
+                    if (!m_running) {
+                        break;
+                    }
+
+                    //int fd;
+                    //read(m_close_fd_r, &fd, sizeof(fd));
                 }
 
                 // new connection
@@ -171,6 +176,9 @@ namespace ssl {
         util::logger::dbg("disconnected client [" + conn_ptr->get_ip() + "]");
 
         remove_epoll_data(mit->second);
+
+        //int fd = conn_ptr->get_socket();
+        //write(m_close_fd_r, &fd, sizeof(fd));
     }
 
     void server::toggle_timeout(server_conn_ptr conn_ptr) {
@@ -290,12 +298,18 @@ namespace ssl {
         }
     }
 
+    bool server::validate_epoll_data(int fd) {
+        return true;
+    }
+
     void server::remove_epoll_data(epoll_data* data_ptr) {
         if (!epoll_ctl_del(data_ptr->m_conn_data->m_socket_fd))
             util::logger::err("failed to remove client socket from epoll list");
         if (!epoll_ctl_del(data_ptr->m_conn_data->m_timer_fd))
             util::logger::err("failed to remove client timer from epoll list");
         
+        util::logger::dbg("client [" + data_ptr->m_conn_data->m_conn_ptr->get_ip() + "] connected");
+
         data_ptr->m_conn_data->m_conn_ptr->close();
         ::close(data_ptr->m_conn_data->m_timer_fd);
 

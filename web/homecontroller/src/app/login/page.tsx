@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 
 
 import { loginUser, LoginUserResponse } from '@/deps/hc/api_requests';
-import { ClientPacket, Opcode } from '@/deps/hc/client_packet';
 import { myConnManager } from '@/deps/hc/node';
 
 export default function LoginPage() {
@@ -20,44 +19,17 @@ export default function LoginPage() {
     const handleLogin = async (e: any) => {
         e.preventDefault();
 
-        myConnManager.onDisconnect = () => {
-            router.push('/login');
-            setErrorMessage('Unable to connect to server!');
-        };
-
         try {
             const loginUserResponse: LoginUserResponse = await loginUser('test', '1234');
             document.cookie = 'token=' + loginUserResponse.token + '; path=/';
 
-            /*myConnManager.connect(loginUserResponse.nodes, )
-            .then(() => {
-                setSuccessMessage('Logged in!');
-                router.push('/home/devices');
-            })
-            .catch(() => {
-                setErrorMessage('Unable to connect to server!');
-            });*/
-
             setSuccessMessage('Logged in!');
 
+            myConnManager.clear();
             router.push('/home/devices');
         } catch(e) {
             setErrorMessage('Login failed!');
         }
-
-        /*const packet = new ClientPacket();
-        packet.setMessageId(0x00000000);
-        packet.setOpcode(Opcode.DATA);
-        packet.setDeviceIdFromStr('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB');
-        packet.setDataFromStr('Hi');
-        
-        myConnManager.send('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC', packet)
-        .then((res) => {
-            console.log(res);
-        })
-        .catch(() => {
-            console.log('Failed to send message!');
-        });*/
     };
 
     return (

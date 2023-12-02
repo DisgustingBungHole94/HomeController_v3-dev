@@ -60,6 +60,8 @@ namespace ssl {
             void handle_data(epoll_data* data_ptr);
             void handle_timeout(epoll_data* data_ptr);
 
+            bool validate_epoll_data(int fd);
+
             void remove_epoll_data(epoll_data* data_ptr);
 
             bool set_nonblocking(int fd);

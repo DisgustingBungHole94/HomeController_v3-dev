@@ -1,6 +1,20 @@
 The Todo List:
 
-1. device_node: Cleanup device_handler and ws_handler, refactor similar to how packets are processed in node.tsx
-2. homecontroller_api: Remove /login/device & /login/user in favor of unified login request
-3. homecontroller_api: Add /connect/device
+Needs immediate attention:
+
+* device_node: Fix seg fault function by implementing server->close_list
+    1. create server->close_list, an std::set<int> of fds to be closed at the end of each run loop
+    2. For each epoll event in server->run, check that the fd is not in the close_list, continue; if it is
+    3. A message from server->close_pipe_r adds an fd to be closed
+    4. handle_timeout, handle_close add fds that will be closed
+    5. At the end of server->run, call remove_epoll_data for each fd in the close list
+
+Listed in order of priority:
+
+1. homecontroller_api: Remove /login/device & /login/user in favor of unified login request
+2. homecontroller_api: Add /connect/device
+3. device_node: Cleanup device_handler and ws_handler, refactor similar to how packets are processed in node.tsx
 4. homecontroller_api: Setup mongo.db
+5. device_node: Investigate close function of server connection as potential cause of SIGPIPE issue
+6. homecontroler_api: Change connection->close so recv calls close() when necessary
+7. web: Add rememeber me to login, save refresh token as cookie

@@ -16,6 +16,12 @@ export default function DevicesPage() {
     const [offlineDevices, setOfflineDevices] = useState<React.ReactElement[]>([]);
 
     useEffect(() => {
+        console.log(deviceContext);
+
+        if (deviceContext.loading) {
+            return;
+        }
+
         const onlineDevicesArr: React.ReactElement[] = [];
         const offlineDevicesArr: React.ReactElement[] = [];
 

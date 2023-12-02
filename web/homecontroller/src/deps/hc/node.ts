@@ -112,12 +112,13 @@ class NodeConnection {
             }
     
             this.socket.onclose = () => {
-                this.connected = false;
-
                 if (!this.authenticated) {
                     reject();
                 } else {
-                    this.onClose();
+                    if (this.connected) {
+                        this.onClose();
+                        this.connected = false;
+                    }
                 }
             }
 
@@ -288,21 +289,21 @@ class NodeConnectionManager {
         });
     }
 
-    public setAllCallbacks(stateUpdateCallback: StateUpdateCallback, connectCallback: ConnectCallback, disconnectCallback: DisconnectCallback) {
+    public clear() {
+        this.connections.forEach((connection) => {
+            connection.close();
+        });
+        this.connections.clear();
+
+        this.connected = false;
+    }
+
+    public setCallbacks(stateUpdateCallback: StateUpdateCallback, connectCallback: ConnectCallback, disconnectCallback: DisconnectCallback) {
         this.deviceList.forEach((deviceState: DeviceInfo) => {
             deviceState.onStateUpdate = stateUpdateCallback;
             deviceState.onConnect = connectCallback;
             deviceState.onDisconnect = disconnectCallback;
         });
-    }
-
-    public setStateUpdateCallback(deviceId: string, callback: StateUpdateCallback) {
-        const device = this.deviceList.get(deviceId);
-        if (!device) {
-            return;
-        } 
-
-        device.onStateUpdate = callback;
     }
 }
 

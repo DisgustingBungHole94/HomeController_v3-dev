@@ -1,0 +1,10 @@
+**/.DS_store
+old/
+.vscode/
+bin/
+cert/
+build/
+node_modules/
+**/package-lock.json
+.next/
+web/homecontroller/README.md

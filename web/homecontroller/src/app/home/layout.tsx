@@ -14,7 +14,9 @@ import Cookies from 'js-cookie';
 
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
     const [error, setError] = useState('');
-    const [devices, setDevices] = useState<DeviceList>(emptyDeviceList());
+
+    const deviceList: DeviceList = emptyDeviceList();
+    const [devices, setDevices] = useState<DeviceList>(deviceList);
 
     const router = useRouter();
 
@@ -24,40 +26,38 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
     };
 
     const onDeviceStateUpdate = (device: Device, state: State) => {
-        updateDevicesState(device, state, true);
+        let deviceState: DeviceState = {
+            device: device,
+            state: state
+        };
+
+        deviceList.onlineDevices.set(device.id, deviceState)
+        updateDevicesState();
     };
 
     const onDeviceConnect = (device: Device, state: State) => {
-        updateDevicesState(device, state, true);
+        let deviceState: DeviceState = {
+            device: device,
+            state: state
+        };
+
+        deviceList.offlineDevices.delete(device.id);
+        deviceList.onlineDevices.set(device.id, deviceState);
+        updateDevicesState();
     };
 
     const onDeviceDisconnect = (device: Device) => {
-        updateDevicesState(device, null, false);
+        deviceList.onlineDevices.delete(device.id);
+        deviceList.offlineDevices.set(device.id, device);
+        updateDevicesState();
     };
 
-    const updateDevicesState = (device: Device, state: State | null, online: boolean) => {
+    const updateDevicesState = () => {
         let newList: DeviceList = { 
-            onlineDevices: new Map<string, DeviceState>(devices.onlineDevices),
-            offlineDevices: new Map<string, Device>(devices.offlineDevices),
-            loading: false
+            onlineDevices: deviceList.onlineDevices,
+            offlineDevices: deviceList.offlineDevices,
+            loading: deviceList.loading
         };
-    
-        if (online) {
-            if (!state) {
-                return;
-            }
-
-            let newState: DeviceState = {
-                device: device,
-                state: state
-            };
-
-            newList.offlineDevices.delete(device.id);
-            newList.onlineDevices.set(device.id, newState);
-        } else {
-            newList.onlineDevices.delete(device.id);
-            newList.offlineDevices.set(device.id, device);
-        }
 
         setDevices(newList);
     };
@@ -73,22 +73,21 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
             try {
                 const connectUserResponse: ConnectUserResponse = await connectUser(token!);
 
-                let deviceList: DeviceList = emptyDeviceList();
                 connectUserResponse.devices.forEach((device) => {
                     deviceList.offlineDevices.set(device.id, device);
                 });
-                setDevices(deviceList);
 
                 myConnManager.setDeviceList(connectUserResponse.devices);                
-                myConnManager.setAllCallbacks(onDeviceStateUpdate, onDeviceConnect, onDeviceDisconnect);
+                myConnManager.setCallbacks(onDeviceStateUpdate, onDeviceConnect, onDeviceDisconnect);
                 
                 await myConnManager.connect(connectUserResponse.nodes);
+
+                deviceList.loading = false;
+                updateDevicesState();
             } catch(e) {
                 setDevices(emptyDeviceList());
                 setError('Unable to connect to server!');
             }
-        } else {
-            myConnManager.setAllCallbacks(onDeviceStateUpdate, onDeviceConnect, onDeviceDisconnect);
         }
     };
 

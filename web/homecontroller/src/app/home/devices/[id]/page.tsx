@@ -1,7 +1,7 @@
 'use client';
 
 import { myConnManager } from '@/deps/hc/node';
-import { useEffect, useContext, useState } from 'react';
+import React, { useEffect, useContext, useState } from 'react';
 
 import { DeviceContext } from '@/app/home/contexts/device_context';
 import { ErrorContext } from '@/app/home/contexts/error_context';
@@ -14,7 +14,10 @@ export default function DevicePage({ params }: { params: { id: string } }) {
     let deviceContext = useContext(DeviceContext);
     let errorContext = useContext(ErrorContext);
 
-    const [testText, setTestText] = useState<string>('Loading...');
+    const [infoText, setInfoText] = useState<string | null>('Loading...');
+    const [component, setComponent] = useState<React.ReactElement | null>();
+
+    let initialized: boolean = false;
 
     useEffect(() => {
         if (deviceContext.loading) {
@@ -22,25 +25,46 @@ export default function DevicePage({ params }: { params: { id: string } }) {
         }
 
         if (!params.id) {
-            setTestText('No device specified!');
+            setInfoText('No device specified!');
             return;
         }
 
         let deviceState = deviceContext.onlineDevices.get(params.id);
         if (!deviceState) {
-            setTestText('Device not found!');
-            return;
+            if(deviceContext.offlineDevices.get(params.id)) {
+                setComponent(null);
+                setInfoText('Device is offline!')
+            } else {
+                setComponent(null);
+                setInfoText('Device not found!');
+            }
+        } else {
+            if (initialized) {
+                return;
+            }
+
+            switch (deviceState.device.type) {
+                case 'test_device':
+                    setComponent(<p>Device name: {deviceState.device.name}</p>);
+                    break;
+                default:
+                    setInfoText('Unsupported device type!');
+            }
+            initialized = true;
         }
 
-        console.log(deviceState.state);
-
-        setTestText('Device Note: ' + deviceState.device.note);
+        console.log(deviceContext);
     }, [deviceContext]);
 
     return (
         <div>
-            {testText && (
-                <p>{testText}</p>
+            {infoText && !component && (
+                <p>{infoText}</p>
+            )}
+            {component && (
+                <div>
+                    {component}
+                </div>
             )}
         </div>
     )
