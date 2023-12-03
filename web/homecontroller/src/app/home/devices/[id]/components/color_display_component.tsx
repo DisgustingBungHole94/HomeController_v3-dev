@@ -37,8 +37,16 @@ export default function ColorDisplayComponent({ deviceId }: ColorDisplayComponen
             return;
         }
 
+        canvas.style.width = '100%';
+        canvas.style.height = '0.5rem';
+
         context.fillStyle = 'rgb(' + state.getR() + ' ' + state.getG() + ' ' + state.getB() + ')'
-        context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+
+        const RECT_WIDTH = 5;
+        for(let i = 0; i < context.canvas.width; i += RECT_WIDTH * 2) {
+            let x = i + 0.5;
+            context.fillRect(x, 0, RECT_WIDTH, context.canvas.height);
+        }
     }, [deviceContext]);
 
     return <canvas ref={canvasRef} />

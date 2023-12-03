@@ -58,6 +58,7 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
         }
 
         setColor({r: state.getR(), g: state.getG(), b: state.getB() });
+        setPickerColor('rgb(' + state.getR() + ' ' + state.getG() + ' ' + state.getB() + ')');
         setColorDisplayComponent(<ColorDisplayComponent deviceId={deviceState.device.id} />)
 
         setSpeed(state.getSpeed());
@@ -108,7 +109,7 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
                 <h2 className="text-lg text-gray-500 mx-2 my-4">{deviceNote}</h2>
             </div>
             {colorDisplayComponent && (
-                <div>
+                <div className="my-5">
                     {colorDisplayComponent}
                 </div>
             )}
