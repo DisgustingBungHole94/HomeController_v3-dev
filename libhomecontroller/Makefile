@@ -19,6 +19,13 @@ LIBS += -lllhttp
 LIBINSTALLDIR = /usr/local/lib
 INCINSTALLDIR = /usr/local/include
 
+# api/device_states
+_OBJECTS += api/device_states/device_state.o
+_HEADERS += api/device_states/device_state.h
+
+_OBJECTS += api/device_states/rgb_lights_state.o
+_HEADERS += api/device_states/rgb_lights_state.h
+
 # api/request
 _OBJECTS += api/request/login_device_request.o
 _HEADERS += api/request/login_device_request.h

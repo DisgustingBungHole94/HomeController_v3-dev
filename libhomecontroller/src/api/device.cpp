@@ -10,11 +10,11 @@ namespace hc {
 namespace api {
     
     void device::run(state::power power, const std::string& state_data) {
-        state initial_state;
-        initial_state.set_power(power);
-        initial_state.set_data(state_data);
+        //state initial_state;
+        m_state.set_power(power);
+        m_state.set_data(state_data);
 
-        std::string initial_state_data = initial_state.serialize();
+        std::string init_state_data = m_state.serialize();
 
         client_packet auth_req_packet;
         auth_req_packet.set_message_id(0xABCD1234);
@@ -22,19 +22,21 @@ namespace api {
         auth_req_packet.set_device_id(m_device_id);
 
         std::string data;
-        data.reserve(info::TICKET_LENGTH + initial_state_data.length());
+        data.reserve(info::TICKET_LENGTH + init_state_data.length());
         //data += (is_on) ? 0x00 : 0x01;
         data += m_ticket;
-        data += initial_state_data;
+        data += init_state_data;
 
         auth_req_packet.set_data_length(data.size());
         auth_req_packet.set_data(data);
+
+        util::logger::dbg("sending auth packet...");
 
         m_conn_ptr->send(auth_req_packet.serialize());
 
         std::string auth_res_data = m_conn_ptr->recv();
         if (m_conn_ptr->is_closed()) {
-            hc::util::logger::log("disconnected from server");
+            util::logger::log("disconnected from server");
             return;
         }
 
@@ -42,25 +44,29 @@ namespace api {
         auth_res_packet.parse(auth_res_data);
 
         if (auth_res_packet.get_opcode() != hc::api::client_packet::opcode::AUTHENTICATE) {
-            hc::util::logger::err("node did not authorize client");
+            util::logger::err("node did not authorize client");
 
             m_conn_ptr->close();
             return;
         }
 
+        util::logger::dbg("successfully authenticated!");
+
         m_running = true;
+
+        util::logger::log("device started, listening for requests");
 
         while(m_running) {
             std::string req_data = m_conn_ptr->recv();
             if (m_conn_ptr->is_closed()) {
-                hc::util::logger::log("disconnected from server");
+                util::logger::log("disconnected from server");
                 return;
             }
             client_packet req_packet;
             req_packet.parse(req_data);
 
             if (req_packet.get_device_id() != m_device_id) {
-                hc::util::logger::err("packet device id mismatch!");
+                util::logger::err("packet device id mismatch!");
 
                 m_conn_ptr->close();
                 return;
@@ -70,20 +76,20 @@ namespace api {
 
             switch(req_packet.get_opcode()) {
                 case hc::api::client_packet::opcode::ON:
+                    hc::util::logger::dbg("received ON packet");
                     m_turn_on_callback();
                     m_state.set_power(hc::api::state::power::ON);
                     send_notify_packet();
-                    hc::util::logger::dbg("received ON packet");
                     break;
                 case hc::api::client_packet::opcode::OFF:
+                    hc::util::logger::dbg("received OFF packet");
                     m_turn_off_callback();
                     m_state.set_power(hc::api::state::power::OFF);
                     send_notify_packet();
-                    hc::util::logger::dbg("received OFF packet");
                     break;
                 case hc::api::client_packet::opcode::DATA:
-                    res_data = m_data_callback(req_packet.get_data());
                     hc::util::logger::dbg("received DATA packet");
+                    res_data = m_data_callback(req_packet.get_data());
                     break;
                 default:
                     break;

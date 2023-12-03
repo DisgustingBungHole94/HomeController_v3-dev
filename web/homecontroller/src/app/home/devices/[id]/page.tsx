@@ -9,13 +9,15 @@ import { ErrorContext } from '@/app/home/contexts/error_context';
 import { Device } from '@/deps/hc/api_requests';
 import { State } from '@/deps/hc/state';
 
+import RGBLightsPanel from '@/app/home/devices/[id]/components/rgb_lights_panel';
+
 
 export default function DevicePage({ params }: { params: { id: string } }) {
     let deviceContext = useContext(DeviceContext);
     let errorContext = useContext(ErrorContext);
 
     const [infoText, setInfoText] = useState<string | null>('Loading...');
-    const [component, setComponent] = useState<React.ReactElement | null>();
+    const [component, setComponent] = useState<React.ReactElement | null>(null);
 
     let initialized: boolean = false;
 
@@ -45,15 +47,13 @@ export default function DevicePage({ params }: { params: { id: string } }) {
 
             switch (deviceState.device.type) {
                 case 'test_device':
-                    setComponent(<p>Device name: {deviceState.device.name}</p>);
+                    setComponent(<RGBLightsPanel key={deviceState.device.id} deviceId={deviceState.device.id} nodeId={deviceState.device.nodeId} />);
                     break;
                 default:
                     setInfoText('Unsupported device type!');
             }
             initialized = true;
         }
-
-        console.log(deviceContext);
     }, [deviceContext]);
 
     return (

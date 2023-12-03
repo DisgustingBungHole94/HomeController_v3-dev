@@ -7,7 +7,7 @@ void turn_on_callback() {
 }
 
 void turn_off_callback() {
-    hc::util::logger::log("Turning off!");
+    hc::util::loggser::log("Turning off!");
 }
 
 std::string data_callback(std::string data) {

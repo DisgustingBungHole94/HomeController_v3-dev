@@ -1,4 +1,3 @@
-import { Exception } from '@/deps/hc/util/exception';
 import * as bits from '@/deps/hc/util/bits';
 
 export enum Opcode {

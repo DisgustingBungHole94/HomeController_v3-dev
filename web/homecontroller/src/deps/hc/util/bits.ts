@@ -1,3 +1,21 @@
+export function u8ArrayToFloat(array: Uint8Array): number {
+    let buf: ArrayBuffer = new ArrayBuffer(4);
+    let view: DataView = new DataView(buf);
+
+    array.forEach((b, i) => {
+        view.setUint8(i, b);
+    });
+
+    return view.getFloat32(0);
+}
+
+export function floatToU8Array(num: number): Uint8Array {
+    let floatArr = new Float32Array(1);
+    floatArr[0] = num;
+
+    return new Uint8Array(floatArr.buffer);
+}
+
 export function u8ArrayToU16(array: Uint8Array): number {
     return u8ArrayToUInt(array, 16);
 }

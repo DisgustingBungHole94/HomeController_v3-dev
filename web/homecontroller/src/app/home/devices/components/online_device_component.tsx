@@ -27,7 +27,7 @@ export default function OnlineDeviceComponent({ deviceId, nodeId, state, deviceN
 
         myConnManager.send(nodeId, packet)
         .catch(() => {
-            errorContext?.setError('Failed to send message!');
+            errorContext?.setError('Failed to toggle power!');
         })
     };
 

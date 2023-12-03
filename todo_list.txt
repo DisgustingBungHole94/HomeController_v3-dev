@@ -18,3 +18,5 @@ Listed in order of priority:
 5. device_node: Investigate close function of server connection as potential cause of SIGPIPE issue
 6. homecontroler_api: Change connection->close so recv calls close() when necessary
 7. web: Add rememeber me to login, save refresh token as cookie
+8. device_node/libhomecontroller: Phase out exceptions in favor of bool return types (specifically for client_packet and state)
+9. device_node: Check if device is already online

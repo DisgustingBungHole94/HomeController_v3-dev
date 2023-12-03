@@ -32,12 +32,16 @@ namespace api {
         request.set_password(password);
         request.set_device_id(device_id);
 
+        util::logger::dbg("sending login request...");
+
         login_device_response response;
         make_request(request, response);
 
         if (!response.get_success()) {
             throw exception("login failed: " + response.get_error_msg(), "hc::api::request_maker::login");
         }
+
+        util::logger::dbg("login successful! connecting to node...");
 
         m_logged_in = true;
 
@@ -55,6 +59,8 @@ namespace api {
         }
 
         m_ssl_client.disable_timeout();
+
+        util::logger::dbg("node connection successful!");
 
         device device(m_ssl_client.get_conn(), response.get_device_id(), response.get_ticket());
 

@@ -66,8 +66,10 @@ namespace ssl {
                 int err = SSL_get_error(m_ssl.get(), num_bytes);
                 switch(err) {
                     case SSL_ERROR_SYSCALL:
-                        m_closed = true;
-                        util::logger::err("underlying socket error");
+                        if (!m_closed) {
+                            m_closed = true;
+                            util::logger::err("underlying socket error");
+                        }
                         return "";
                     default:
                         util::logger::err("openssl error: " + error_str());
@@ -99,8 +101,10 @@ namespace ssl {
             int err = SSL_get_error(m_ssl.get(), res);
             switch(err) {
                 case SSL_ERROR_SYSCALL:
-                    m_closed = true;
-                    util::logger::err("underlying socket error");
+                    if (!m_closed) {
+                        m_closed = true;
+                        util::logger::err("underlying socket error");
+                    }
                     return;
                     break;
                 default:
@@ -113,7 +117,7 @@ namespace ssl {
     }
 
     void connection::close() {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        //std::lock_guard<std::mutex> lock(m_mutex);
 
         if (!m_closed) {
             m_closed = true;

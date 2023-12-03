@@ -6,5 +6,5 @@
     "max_conns": 32,
     "conn_expire_time": 5000,
     "multithreaded": true,
-    "debug_mode": false
+    "debug_mode": true
 }

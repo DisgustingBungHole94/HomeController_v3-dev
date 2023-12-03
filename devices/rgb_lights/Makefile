@@ -9,7 +9,7 @@ CXXFLAGS ?= -g $(INCLUDES)
 BINARYDIR = bin
 OBJECTDIR = $(BINARYDIR)/obj
 
-TARGET = $(BINARYDIR)/light_strip
+TARGET = $(BINARYDIR)/rgb_lights
 
 LIBS += -lpthread
 LIBS += -lssl
@@ -17,6 +17,12 @@ LIBS += -lhomecontroller
 
 # root
 _OBJECTS += main.o
+
+_OBJECTS += pwm.o
+_HEADERS += pwm.h
+
+_OBJECTS += rgb_lights.o
+_HEADERS += rgb_lights.h
 
 OBJECTS = $(patsubst %,$(OBJECTDIR)/%,$(_OBJECTS))
 HEADERS = $(patsubst %,$(SRCDIR)/%,$(_HEADERS))
