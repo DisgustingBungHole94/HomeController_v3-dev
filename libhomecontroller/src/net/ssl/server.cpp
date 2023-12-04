@@ -93,6 +93,14 @@ namespace ssl {
             for (int i = 0; i < num_fds; i++) {
                 epoll_data* data_ptr = static_cast<epoll_data*>(events[i].data.ptr);
 
+                util::logger::log(".");
+                auto mit = m_close_list.find(data_ptr->m_fd);
+                if (!m_close_list.empty() && mit != m_close_list.end()) {
+                    util::logger::csh("I WOULD HAVE CRASHED");
+                    continue;
+                }
+                util::logger::log("..");
+
                 // server closed
                 if (data_ptr->m_fd == m_close_fd_r) {
                     if (!m_running) {
@@ -105,7 +113,9 @@ namespace ssl {
 
                 // new connection
                 else if (data_ptr->m_fd == m_socket) {
+                    util::logger::log("...!");
                     accept();
+                    util::logger::log("....!");
                 } 
                 
                 else {
@@ -128,6 +138,14 @@ namespace ssl {
                     }
                 }
             }
+
+            util::logger::log("...");
+            if (!m_close_list.empty()) {
+                for (auto& x : m_close_list) {
+                    remove_epoll_data(x.second);
+                }
+            }
+            util::logger::log("....");
         } while(m_running);
 
         // close server socket
@@ -161,7 +179,7 @@ namespace ssl {
     }
 
     void server::close_connection(server_conn_ptr conn_ptr) {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
+        //std::lock_guard<std::mutex> lock(m_mutex);
 
         auto mit = m_epoll_fds.find(conn_ptr->get_socket());
         if (mit == m_epoll_fds.end()) {
@@ -173,16 +191,16 @@ namespace ssl {
             throw exception("connection not found in epoll list", "hc::net::ssl::server::close_connection");
         }
 
+        int fd = mit->first;
+        write(m_close_fd_r, &fd, sizeof(fd));
+
         util::logger::dbg("disconnected client [" + conn_ptr->get_ip() + "]");
 
-        remove_epoll_data(mit->second);
-
-        //int fd = conn_ptr->get_socket();
-        //write(m_close_fd_r, &fd, sizeof(fd));
+        //remove_epoll_data(mit->second);
     }
 
     void server::toggle_timeout(server_conn_ptr conn_ptr) {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
+        //std::lock_guard<std::mutex> lock(m_mutex);
 
         auto mit = m_epoll_fds.find(conn_ptr->get_socket());
         if (mit == m_epoll_fds.end()) {
@@ -208,7 +226,9 @@ namespace ssl {
     void server::on_disconnect(server_conn_hdl conn_hdl) {}*/
 
     void server::accept() {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
+        util::logger::log(".");
+        //std::lock_guard<std::mutex> lock(m_mutex);
+        util::logger::log(".!");
 
         sockaddr_in client_addr;
         int client_len = sizeof(client_addr);
@@ -218,6 +238,7 @@ namespace ssl {
             util::logger::err("failed to establish connection with client");
             return;
         }
+        util::logger::log(".!!");
 
         unique_ptr<SSL> client_ssl(SSL_new(m_ssl_ctx.get()));
         SSL_set_fd(client_ssl.get(), client_socket);
@@ -262,14 +283,15 @@ namespace ssl {
     }
 
     void server::handle_close(epoll_data* data_ptr) {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
+        //std::lock_guard<std::mutex> lock(m_mutex);
 
         util::logger::dbg("client [" + data_ptr->m_conn_data->m_conn_ptr->get_ip() + "] disconnected");
-        remove_epoll_data(data_ptr);
+        m_close_list.insert(std::make_pair(data_ptr->m_fd, data_ptr));
+        //remove_epoll_data(data_ptr);
     }
 
     void server::handle_data(epoll_data* data_ptr) {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
+        //std::lock_guard<std::mutex> lock(m_mutex);
 
         if (!update_timer_fd(data_ptr->m_conn_data->m_timer_fd, m_default_timeout)) {
             util::logger::err("failed to update timer for client");
@@ -290,11 +312,12 @@ namespace ssl {
     }
 
     void server::handle_timeout(epoll_data* data_ptr) {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
+        //std::lock_guard<std::mutex> lock(m_mutex);
 
         if (data_ptr->m_conn_data->m_timeout_enabled) {
             util::logger::dbg("client [" + data_ptr->m_conn_data->m_conn_ptr->get_ip() + "] timed out");
-            remove_epoll_data(data_ptr);
+            m_close_list.insert(std::make_pair(data_ptr->m_fd, data_ptr));
+            //remove_epoll_data(data_ptr);
         }
     }
 

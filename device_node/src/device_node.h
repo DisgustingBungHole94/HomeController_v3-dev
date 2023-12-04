@@ -35,8 +35,6 @@ class device_node : public std::enable_shared_from_this<device_node> {
 
             int m_max_connections;
             int m_connection_expire_time;
-            
-            bool m_multithreaded;
 
             bool m_debug_mode;
         } m_config;

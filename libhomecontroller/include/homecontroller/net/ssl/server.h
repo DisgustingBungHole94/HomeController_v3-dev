@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <mutex>
 #include <functional>
+#include <set>
+#include <map>
 
 namespace hc {
 namespace net {
@@ -85,12 +87,14 @@ namespace ssl {
             int m_close_fd_r;
             int m_close_fd_w;
 
+            std::map<int, epoll_data*> m_close_list;
+
             bool m_running;
 
             int m_default_timeout;
 
             // thread safety
-            std::recursive_mutex m_mutex;
+            std::mutex m_mutex;
     };
 
 }

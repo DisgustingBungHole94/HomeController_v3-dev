@@ -46,11 +46,6 @@ bool device_node::start() {
         m_config.m_max_connections = conf_doc.get_int("max_conns");
         m_config.m_connection_expire_time = conf_doc.get_int("conn_expire_time");
 
-        m_config.m_multithreaded = conf_doc.get_bool("multithreaded");
-        if (m_config.m_multithreaded) {
-            hc::util::logger::log("multithreading enabled");
-        }
-
         m_config.m_debug_mode = conf_doc.get_bool("debug_mode");
         if (m_config.m_debug_mode) {
             hc::util::logger::enable_debug();
@@ -67,10 +62,6 @@ bool device_node::start() {
 
         // init ssl server
         m_state.m_server->init(m_config.m_port, m_config.m_tls_cert_file, m_config.m_tls_priv_key_file, m_config.m_connection_expire_time);
-
-        // init thread pool
-        if (m_config.m_multithreaded)
-            m_thread_pool.start(m_config.m_max_connections);
     } catch(hc::exception& e) {
         hc::util::logger::csh("failed to intialize: " + std::string(e.what()) + " (" + std::string(e.func()) + ")");
         return false;
@@ -123,15 +114,7 @@ void device_node::on_data(hc::net::ssl::server_conn_hdl conn_hdl) {
 
     std::string data = conn_ptr->recv();
 
-    if (m_config.m_multithreaded) {
-        m_thread_pool.add_job([=]() {
-            client_job(conn_ptr, data);
-        });
-    }
-
-    else {
-        client_job(conn_ptr, data);
-    }
+    client_job(conn_ptr, data);
 }
 
 void device_node::on_disconnect(hc::net::ssl::server_conn_hdl conn_hdl) {\
@@ -171,11 +154,6 @@ void device_node::loop() {
 
     // stop ssl server
     m_state.m_server->stop();
-
-    // stop thread pool
-    if (m_config.m_multithreaded)
-        m_thread_pool.stop();
-
 }
 
 void device_node::client_job(hc::net::ssl::server_conn_ptr conn_ptr, std::string data) {
