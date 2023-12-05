@@ -27,17 +27,24 @@ namespace ws {
 
             ~wrapper() {}
 
-            void wrap(std::shared_ptr<ssl::connection> conn_ptr);
+            void use(std::shared_ptr<ssl::connection> conn_ptr) { m_tmp_conn_ptr = conn_ptr; }
+            void unuse() { m_tmp_conn_ptr = nullptr; }
+
+            //void wrap(std::shared_ptr<ssl::connection> conn_ptr);
+            void init();
 
             void send(const std::string& data);
 
+            //void recv();
+            //void recv_external(const std::string& data); // receive bytes from external source
             void recv();
-            void recv_external(const std::string& data); // receive bytes from external source
+
+            //void perform_send(std::shared_ptr<ssl::connection> conn_ptr);
 
             void close();
             bool is_closed() { return m_closed; }
 
-            std::string get_last_message() { return m_last_message; }
+            const std::vector<std::string>& get_message_log() { return m_message_log; }
 
         private:
             virtual void init_ws_conn();
@@ -50,13 +57,19 @@ namespace ws {
             void on_close(websocketpp::connection_hdl ws_conn_hdl);
             void on_message(websocketpp::connection_hdl hdl, std::shared_ptr<websocketpp::config::core::message_type> msg);
 
-            std::weak_ptr<ssl::connection> m_conn_hdl;
+            //std::shared_ptr<ssl::connection> m_conn_ptr;
             
             bool m_closed;
-            std::string m_last_message;
+            
+            std::vector<std::string> m_message_log;
+
+            //std::vector<websocketpp::transport::buffer> m_send_bufs;
 
         protected:
             std::shared_ptr<websocketpp::connection<config_type>> m_ws_conn_ptr;
+
+            std::shared_ptr<ssl::connection> m_tmp_conn_ptr;
+
 
     };
 

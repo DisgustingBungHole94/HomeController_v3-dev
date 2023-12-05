@@ -70,7 +70,9 @@ class NodeConnection {
                 const packet = new ClientPacket();
                 if (!packet.parse(new Uint8Array(e.data))) {
                     return;
-                }        
+                }
+
+                console.log(packet);
 
                 switch(packet.getOpcode()) {
                     case Opcode.AUTHENTICATE:
@@ -268,7 +270,7 @@ class NodeConnectionManager {
                 const connection = new NodeConnection(nodes[i].node.host, nodes[i].node.port, this.deviceList);
                 connection.onClose = onCloseCallback;
 
-                await connection.connect(nodes[i].ticket, );
+                await connection.connect(nodes[i].ticket);
                 this.connections.set(nodes[i].node.id, connection);
             }
         }

@@ -7,7 +7,6 @@
 #include <mutex>
 #include <functional>
 #include <set>
-#include <map>
 
 namespace hc {
 namespace net {
@@ -47,10 +46,10 @@ namespace ssl {
                 server_conn_ptr m_conn_ptr;
             };
 
-            struct epoll_data {
+            /*struct epoll_data {
                 int m_fd;
                 std::shared_ptr<connection_data> m_conn_data;
-            };
+            };*/
 
             std::function<void(server_conn_ptr)> m_on_connect_callback;
             std::function<void(server_conn_ptr)> m_on_data_callback;
@@ -58,13 +57,13 @@ namespace ssl {
 
             void accept();
 
-            void handle_close(epoll_data* data_ptr);
-            void handle_data(epoll_data* data_ptr);
-            void handle_timeout(epoll_data* data_ptr);
+            void handle_close(std::shared_ptr<connection_data> data_ptr);
+            void handle_data(std::shared_ptr<connection_data> data_ptr);
+            void handle_timeout(std::shared_ptr<connection_data> data_ptr);
 
-            bool validate_epoll_data(int fd);
+            //bool validate_epoll_data(epoll_data* data_ptr);
 
-            void remove_epoll_data(epoll_data* data_ptr);
+            void remove_epoll_data(std::shared_ptr<connection_data> data_ptr);
 
             bool set_nonblocking(int fd);
 
@@ -82,19 +81,19 @@ namespace ssl {
             int m_socket;
             int m_epfd;
 
-            std::unordered_map<int, epoll_data*> m_epoll_fds;
+            std::unordered_map<int, std::shared_ptr<connection_data>> m_epoll_fds;
+
+            //std::set<epoll_data*> m_close_list;
 
             int m_close_fd_r;
             int m_close_fd_w;
-
-            std::map<int, epoll_data*> m_close_list;
 
             bool m_running;
 
             int m_default_timeout;
 
             // thread safety
-            std::mutex m_mutex;
+            //std::recursive_mutex m_mutex;
     };
 
 }

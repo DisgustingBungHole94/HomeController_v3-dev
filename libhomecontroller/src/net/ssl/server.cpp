@@ -91,61 +91,44 @@ namespace ssl {
             int num_fds = epoll_wait(m_epfd, events, MAX_EVENTS, -1);
 
             for (int i = 0; i < num_fds; i++) {
-                epoll_data* data_ptr = static_cast<epoll_data*>(events[i].data.ptr);
-
-                util::logger::log(".");
-                auto mit = m_close_list.find(data_ptr->m_fd);
-                if (!m_close_list.empty() && mit != m_close_list.end()) {
-                    util::logger::csh("I WOULD HAVE CRASHED");
-                    continue;
-                }
-                util::logger::log("..");
-
                 // server closed
-                if (data_ptr->m_fd == m_close_fd_r) {
-                    if (!m_running) {
-                        break;
-                    }
-
-                    //int fd;
-                    //read(m_close_fd_r, &fd, sizeof(fd));
+                if (events[i].data.fd == m_close_fd_r) {
+                    break;
                 }
 
                 // new connection
-                else if (data_ptr->m_fd == m_socket) {
-                    util::logger::log("...!");
+                else if (events[i].data.fd == m_socket) {
                     accept();
-                    util::logger::log("....!");
-                } 
-                
+                }
+
                 else {
+
+                    auto mit = m_epoll_fds.find(events[i].data.fd);
+                    if (mit == m_epoll_fds.end()) {
+                        util::logger::err("fd not found in epoll list");
+                        continue;
+                    }
+                    
                     // connection closed
                     if (events[i].events & (EPOLLRDHUP | EPOLLHUP)) {
-                        handle_close(data_ptr);
+                        handle_close(mit->second);
                     }
 
                     // data received
                     else if (events[i].events & EPOLLIN) {
                         // if fd matches socket, data was received on socket
-                        if (data_ptr->m_fd == data_ptr->m_conn_data->m_socket_fd) {
-                            handle_data(data_ptr);
+                        if (events[i].data.fd == mit->second->m_socket_fd) {
+                            handle_data(mit->second);
                         }
                         
                         // otherwise, data was received from timer fd, socket timed out
-                        else if (data_ptr->m_fd == data_ptr->m_conn_data->m_timer_fd) {
-                            handle_timeout(data_ptr);
+                        else if (events[i].data.fd == mit->second->m_timer_fd) {
+                            handle_timeout(mit->second);
                         }
                     }
-                }
-            }
 
-            util::logger::log("...");
-            if (!m_close_list.empty()) {
-                for (auto& x : m_close_list) {
-                    remove_epoll_data(x.second);
                 }
             }
-            util::logger::log("....");
         } while(m_running);
 
         // close server socket
@@ -158,13 +141,11 @@ namespace ssl {
         // close client fds
         int num_closed = 0;
         for (auto& x : m_epoll_fds) {
-            if (x.second->m_conn_data != nullptr && !x.second->m_conn_data->m_conn_ptr->is_closed() && x.second->m_conn_data->m_conn_ptr->is_ready()) {
-                x.second->m_conn_data->m_conn_ptr->close();
-                m_on_disconnect_callback(x.second->m_conn_data->m_conn_ptr);
+            if (x.second != nullptr && !x.second->m_conn_ptr->is_closed() && x.second->m_conn_ptr->is_ready()) {
+                x.second->m_conn_ptr->close();
+                m_on_disconnect_callback(x.second->m_conn_ptr);
                 num_closed++;
             }
-
-            delete x.second;
         }
 
         m_epoll_fds.clear();
@@ -179,42 +160,34 @@ namespace ssl {
     }
 
     void server::close_connection(server_conn_ptr conn_ptr) {
-        //std::lock_guard<std::mutex> lock(m_mutex);
-
         auto mit = m_epoll_fds.find(conn_ptr->get_socket());
         if (mit == m_epoll_fds.end()) {
             if (conn_ptr->is_closed()) {
-                // connection was likely closed by another thread
                 return;
             }
 
             throw exception("connection not found in epoll list", "hc::net::ssl::server::close_connection");
         }
 
-        int fd = mit->first;
-        write(m_close_fd_r, &fd, sizeof(fd));
+        remove_epoll_data(mit->second);
 
         util::logger::dbg("disconnected client [" + conn_ptr->get_ip() + "]");
-
-        //remove_epoll_data(mit->second);
     }
 
     void server::toggle_timeout(server_conn_ptr conn_ptr) {
-        //std::lock_guard<std::mutex> lock(m_mutex);
-
         auto mit = m_epoll_fds.find(conn_ptr->get_socket());
         if (mit == m_epoll_fds.end()) {
             throw exception("connection not found in epoll list", "hc::net::ssl::server::close_connection");
         }
 
-        mit->second->m_conn_data->m_timeout_enabled = !mit->second->m_conn_data->m_timeout_enabled;
+        mit->second->m_timeout_enabled = !mit->second->m_timeout_enabled;
 
         int new_time = 0;
-        if (mit->second->m_conn_data->m_timeout_enabled) {
+        if (mit->second->m_timeout_enabled) {
             new_time = m_default_timeout;
         }
 
-        if (!update_timer_fd(mit->second->m_conn_data->m_timer_fd, new_time)) {
+        if (!update_timer_fd(mit->second->m_timer_fd, new_time)) {
             util::logger::err("failed to toggle timeout, failed to update timer fd");
         }
 
@@ -226,10 +199,6 @@ namespace ssl {
     void server::on_disconnect(server_conn_hdl conn_hdl) {}*/
 
     void server::accept() {
-        util::logger::log(".");
-        //std::lock_guard<std::mutex> lock(m_mutex);
-        util::logger::log(".!");
-
         sockaddr_in client_addr;
         int client_len = sizeof(client_addr);
 
@@ -238,7 +207,6 @@ namespace ssl {
             util::logger::err("failed to establish connection with client");
             return;
         }
-        util::logger::log(".!!");
 
         unique_ptr<SSL> client_ssl(SSL_new(m_ssl_ctx.get()));
         SSL_set_fd(client_ssl.get(), client_socket);
@@ -282,63 +250,49 @@ namespace ssl {
         util::logger::dbg("client [" + client_conn->get_ip() + "] connected");
     }
 
-    void server::handle_close(epoll_data* data_ptr) {
-        //std::lock_guard<std::mutex> lock(m_mutex);
+    void server::handle_close(std::shared_ptr<connection_data> data_ptr) {
+        remove_epoll_data(data_ptr);
 
-        util::logger::dbg("client [" + data_ptr->m_conn_data->m_conn_ptr->get_ip() + "] disconnected");
-        m_close_list.insert(std::make_pair(data_ptr->m_fd, data_ptr));
-        //remove_epoll_data(data_ptr);
+        util::logger::dbg("client [" + data_ptr->m_conn_ptr->get_ip() + "] disconnected");
     }
 
-    void server::handle_data(epoll_data* data_ptr) {
-        //std::lock_guard<std::mutex> lock(m_mutex);
-
-        if (!update_timer_fd(data_ptr->m_conn_data->m_timer_fd, m_default_timeout)) {
+    void server::handle_data(std::shared_ptr<connection_data> data_ptr) {
+        if (!update_timer_fd(data_ptr->m_timer_fd, m_default_timeout)) {
             util::logger::err("failed to update timer for client");
         }
 
-        if (!data_ptr->m_conn_data->m_conn_ptr->is_ready()) {
-            if (!data_ptr->m_conn_data->m_conn_ptr->handshake()) {
+        if (!data_ptr->m_conn_ptr->is_ready()) {
+            if (!data_ptr->m_conn_ptr->handshake()) {
                 util::logger::err("client handshake failed: " + error_str());
-                close_connection(data_ptr->m_conn_data->m_conn_ptr);
+                remove_epoll_data(data_ptr);
+                //close_connection(data_ptr->m_conn_ptr);
             } else {
-                if (data_ptr->m_conn_data->m_conn_ptr->is_ready()) {
-                    m_on_connect_callback(data_ptr->m_conn_data->m_conn_ptr);
+                if (data_ptr->m_conn_ptr->is_ready()) {
+                    m_on_connect_callback(data_ptr->m_conn_ptr);
                 }
             }
         } else {
-            m_on_data_callback(data_ptr->m_conn_data->m_conn_ptr);
+            m_on_data_callback(data_ptr->m_conn_ptr);
         }
     }
 
-    void server::handle_timeout(epoll_data* data_ptr) {
-        //std::lock_guard<std::mutex> lock(m_mutex);
-
-        if (data_ptr->m_conn_data->m_timeout_enabled) {
-            util::logger::dbg("client [" + data_ptr->m_conn_data->m_conn_ptr->get_ip() + "] timed out");
-            m_close_list.insert(std::make_pair(data_ptr->m_fd, data_ptr));
-            //remove_epoll_data(data_ptr);
+    void server::handle_timeout(std::shared_ptr<connection_data> data_ptr) {
+        if (data_ptr->m_timeout_enabled) {
+            remove_epoll_data(data_ptr);
+            util::logger::dbg("client [" + data_ptr->m_conn_ptr->get_ip() + "] timed out");
         }
     }
 
-    bool server::validate_epoll_data(int fd) {
-        return true;
-    }
-
-    void server::remove_epoll_data(epoll_data* data_ptr) {
-        if (!epoll_ctl_del(data_ptr->m_conn_data->m_socket_fd))
+    void server::remove_epoll_data(std::shared_ptr<connection_data> data_ptr) {
+        if (!epoll_ctl_del(data_ptr->m_socket_fd))
             util::logger::err("failed to remove client socket from epoll list");
-        if (!epoll_ctl_del(data_ptr->m_conn_data->m_timer_fd))
+        if (!epoll_ctl_del(data_ptr->m_timer_fd))
             util::logger::err("failed to remove client timer from epoll list");
         
-        util::logger::dbg("client [" + data_ptr->m_conn_data->m_conn_ptr->get_ip() + "] connected");
+        data_ptr->m_conn_ptr->close();
+        ::close(data_ptr->m_timer_fd);
 
-        data_ptr->m_conn_data->m_conn_ptr->close();
-        ::close(data_ptr->m_conn_data->m_timer_fd);
-
-        m_on_disconnect_callback(data_ptr->m_conn_data->m_conn_ptr);
-
-        delete data_ptr;
+        m_on_disconnect_callback(data_ptr->m_conn_ptr);
     }
 
     bool server::set_nonblocking(int fd) {
@@ -350,19 +304,15 @@ namespace ssl {
     }
 
     bool server::epoll_ctl_add(int fd, uint32_t events, const std::shared_ptr<connection_data>& data_ptr) {
-        epoll_data* epoll_data_ptr = new epoll_data();
-        epoll_data_ptr->m_fd = fd;
-        epoll_data_ptr->m_conn_data = data_ptr;
-
         epoll_event ev;
         ev.events = events;
-        ev.data.ptr = epoll_data_ptr;
+        ev.data.fd = fd;
 
         if (epoll_ctl(m_epfd, EPOLL_CTL_ADD, fd, &ev) == -1) {           
             return false;
         }
 
-        m_epoll_fds.insert(std::make_pair(fd, epoll_data_ptr));
+        m_epoll_fds.insert(std::make_pair(fd, data_ptr));
 
         return true;
     }

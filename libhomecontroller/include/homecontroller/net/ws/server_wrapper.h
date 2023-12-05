@@ -18,7 +18,7 @@ namespace ws {
 
             ~server_wrapper() {}
 
-            void process_client_handshake(const std::string& upgrade_req_data);
+            void process_client_handshake(std::shared_ptr<ssl::connection> conn_ptr, const std::string& upgrade_req_data);
 
         private:
             void init_ws_conn() override;
