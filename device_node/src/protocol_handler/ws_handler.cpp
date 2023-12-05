@@ -78,6 +78,11 @@ void ws_handler::send_disconnect_packet(const std::string& device_id) {
 }
 
 void ws_handler::send_notification_packet(const std::string& device_id, const std::string& data) {
+    hc::net::ssl::server_conn_ptr conn_ptr;
+    if (!(conn_ptr = m_conn_hdl.lock())) {
+        throw hc::exception("invalid connection handle", "ws_handler::send_disconnect_packet");
+    }
+    
     hc::api::client_packet packet;
     packet.set_message_id(0x00000000);
     packet.set_device_id(device_id);
@@ -85,13 +90,23 @@ void ws_handler::send_notification_packet(const std::string& device_id, const st
     packet.set_data_length(data.size());
     packet.set_data(data);
 
+    m_ws_wrapper.use(conn_ptr);
     m_ws_wrapper.send(packet.serialize());
+    m_ws_wrapper.unuse();
 }
 
 void ws_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) {
     hc::util::logger::dbg("received user message");
 
+    m_ws_wrapper.use(conn_ptr);
     m_ws_wrapper.recv();
+    m_ws_wrapper.unuse();
+
+    if (m_ws_wrapper.is_closed()) {
+        hc::util::logger::dbg("user connection closed!");
+        return;
+    }
+
     if (m_ws_wrapper.is_closed()) {
         state.m_server->close_connection(conn_ptr);
         return;
@@ -111,42 +126,47 @@ void ws_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr
             return;
         }
 
-        hc::api::client_packet res;
-        bool need_send = true;
-
-        if (packet.get_magic() != hc::api::info::MAGIC) {
-            hc::util::logger::dbg("packet had invalid magic value");
-            res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x01 }); // error code 0x01 for invalid protocol version
-        }
-
-        else {
-
-            switch(packet.get_opcode()) {
-                case hc::api::client_packet::opcode::AUTHENTICATE:
-                    res = handle_authenticate(state, packet);
-                    break;
-                default:
-                    if (!send_to_device(packet.get_device_id(), data)) {
-                        // if device not found
-                        res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x04 });
-                    } else {
-                        need_send = false;
-                    }
-                    break;
-            }
-
-        }
-
-        if (need_send) {
-            res.set_message_id(packet.get_message_id());
-            res.set_device_id(packet.get_device_id());
-
-            m_ws_wrapper.send(res.serialize());
-        }
+        handle_packet(state, conn_ptr, data, packet);
     }
 }
 
-hc::api::client_packet ws_handler::handle_authenticate(const state& state, const hc::api::client_packet& packet) {
+void ws_handler::handle_packet(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data, const hc::api::client_packet& packet) {
+    hc::api::client_packet res;
+    bool need_send = true;
+
+    if (packet.get_magic() != hc::api::info::MAGIC) {
+        hc::util::logger::dbg("packet had invalid magic value");
+        res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x01 }); // error code 0x01 for invalid protocol version
+        return;
+    }
+
+    switch(packet.get_opcode()) {
+        case hc::api::client_packet::opcode::AUTHENTICATE:
+            res = handle_authenticate(state, conn_ptr, packet);
+            break;
+        default:
+            if (!send_to_device(packet.get_device_id(), data)) {
+                // if device not found
+                res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x04 });
+            } else {
+                need_send = false;
+            }
+            break;
+    }
+
+
+    if (need_send) {
+        res.set_message_id(packet.get_message_id());
+        res.set_device_id(packet.get_device_id());
+
+        m_ws_wrapper.use(conn_ptr);
+        m_ws_wrapper.send(res.serialize());
+        m_ws_wrapper.unuse();
+    }
+}
+
+
+hc::api::client_packet ws_handler::handle_authenticate(const state& state, hc::net::ssl::server_conn_ptr conn_ptr, const hc::api::client_packet& packet) {
     hc::util::logger::dbg("authenticating user...");
     
     hc::api::client_packet err_packet(hc::api::client_packet::opcode::ERROR, { 0x02 });
@@ -173,7 +193,7 @@ hc::api::client_packet ws_handler::handle_authenticate(const state& state, const
     m_user_ptr->add_associated_handler(shared_from_this());
 
     for (auto& x : m_user_ptr->get_devices()) {
-        send_connect_packet(x.first, x.second->get_state().serialize());
+        send_connect_packet(conn_ptr, x.first, x.second->get_state().serialize());
     }
 
     m_authenticated = true;
@@ -192,7 +212,7 @@ bool ws_handler::send_to_device(const std::string& device_id, const std::string&
     try {
         device_ptr->get_device_handler()->send_and_forward_response(shared_from_this(), data);
     
-        hc::util::logger::dbg("[" + device_ptr->get_id() + "] <- User");
+        hc::util::logger::dbg("[" + device_ptr->get_id() + "] <- [" + m_user_ptr->get_id() + "]");
     } catch(hc::exception& e) {
         hc::util::logger::dbg("failed to forward message to device: " + std::string(e.what()));
     }

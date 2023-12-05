@@ -16,7 +16,11 @@ void http_handler::init() {
 
 void http_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) {
     std::string data = conn_ptr->recv();
-    
+    if (conn_ptr->is_closed()) {
+        hc::util::logger::dbg("client connection closed!");
+        return;
+    }
+
     try {
         if (!m_http_parser.parse(data)) {
             hc::util::logger::dbg("partial http request processed, awaiting more data...");
@@ -106,7 +110,7 @@ bool http_handler::handle_upgrade(const hc::net::ssl::server_conn_ptr& conn_ptr,
     if (upgrade_type == "websocket") {
         hc::util::logger::dbg("upgrade HTTP -> WebSocket");
 
-        std::shared_ptr<ws_handler> new_protocol = std::make_shared<ws_handler>();
+        std::shared_ptr<ws_handler> new_protocol = std::make_shared<ws_handler>(conn_ptr);
         new_protocol->send_upgrade_response(conn_ptr, data);
 
         m_new_protocol = std::move(new_protocol);

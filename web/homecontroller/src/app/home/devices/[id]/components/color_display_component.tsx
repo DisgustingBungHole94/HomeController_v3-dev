@@ -1,7 +1,7 @@
 import { DeviceContext } from '@/app/home/contexts/device_context';
 import { RGBLightsState } from '@/deps/hc/device_states/rgb_lights_state';
 
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 
 interface ColorDisplayComponentProps {
     deviceId: string
@@ -12,6 +12,43 @@ export default function ColorDisplayComponent({ deviceId }: ColorDisplayComponen
     
     const canvasRef = useRef<HTMLCanvasElement>(null);
     
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    window.addEventListener('resize', () => {
+        setWindowWidth(window.innerWidth);
+    });
+
+    const drawCanvas = (state: RGBLightsState) => {
+        const canvas: HTMLCanvasElement | null = canvasRef.current;
+        if (!canvas) {
+            return;
+        }
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+            return;
+        }
+
+        canvas.style.width = '100%';
+        canvas.style.height = '0.5rem';
+
+        context.canvas.width = canvas.getBoundingClientRect().width;
+        context.canvas.height = canvas.getBoundingClientRect().height;
+
+        const RECT_WIDTH = 10;
+        const CANVAS_WIDTH = canvas.width;
+
+        const NUM_RECTS = CANVAS_WIDTH / RECT_WIDTH;
+
+        for(let i = 0; i < NUM_RECTS; i += 2) {
+            context.fillStyle = 'rgb(' + state.getR() + ' ' + state.getG() + ' ' + state.getB() + ')';
+            context.fillRect(i * RECT_WIDTH, 0, RECT_WIDTH, context.canvas.height);
+
+            context.fillStyle = 'rgb(255, 255, 255)';
+            context.fillRect((i + 1) * RECT_WIDTH, 0, RECT_WIDTH, context.canvas.height);
+        }
+    };
+
     useEffect(() => {
         if (deviceContext.loading) {
             return;
@@ -27,27 +64,8 @@ export default function ColorDisplayComponent({ deviceId }: ColorDisplayComponen
             return;
         }
 
-        const canvas: HTMLCanvasElement | null = canvasRef.current;
-        if (!canvas) {
-            return;
-        }
-
-        const context = canvas.getContext('2d');
-        if (!context) {
-            return;
-        }
-
-        canvas.style.width = '100%';
-        canvas.style.height = '0.5rem';
-
-        context.fillStyle = 'rgb(' + state.getR() + ' ' + state.getG() + ' ' + state.getB() + ')'
-
-        const RECT_WIDTH = 5;
-        for(let i = 0; i < context.canvas.width; i += RECT_WIDTH * 2) {
-            let x = i + 0.5;
-            context.fillRect(x, 0, RECT_WIDTH, context.canvas.height);
-        }
-    }, [deviceContext]);
+        drawCanvas(state);
+    }, [deviceContext, windowWidth]);
 
     return <canvas ref={canvasRef} />
 }

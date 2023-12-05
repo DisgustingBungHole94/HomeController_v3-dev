@@ -69,6 +69,10 @@ namespace ws {
         }
 
         std::string data = m_tmp_conn_ptr->recv();
+        if (m_tmp_conn_ptr->is_closed()) {
+            m_closed = true;
+            return;
+        }
 
         m_message_log.clear();
         m_ws_conn_ptr->read_all(data.c_str(), data.length());

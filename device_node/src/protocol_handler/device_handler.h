@@ -27,6 +27,7 @@ class device_handler : public protocol_handler, public std::enable_shared_from_t
 
     private:
         void on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) override;
+        void handle_packet(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data, const hc::api::client_packet& packet);
 
         hc::api::client_packet handle_authenticate(const state& state, const hc::api::client_packet& packet);
         void handle_notification(const hc::api::client_packet& packet);

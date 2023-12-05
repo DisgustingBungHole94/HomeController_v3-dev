@@ -59,6 +59,7 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
 
         setColor({r: state.getR(), g: state.getG(), b: state.getB() });
         setPickerColor('rgb(' + state.getR() + ' ' + state.getG() + ' ' + state.getB() + ')');
+
         setColorDisplayComponent(<ColorDisplayComponent deviceId={deviceState.device.id} />)
 
         setSpeed(state.getSpeed());
@@ -100,9 +101,10 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
         })
     };
 
-
     return (
-        <div className="p-6">
+        <div className="p-6" style={{
+            backgroundImage: 'linear-gradient(transparent, rgba(' + color.r + ', ' + color.g + ', ' + color.b + ', 0.2) 15%, transparent)'
+        }}>
             <div>
                 <h1 className="text-5xl">{deviceName}</h1>
                 <hr />

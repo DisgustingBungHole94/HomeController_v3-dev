@@ -9,8 +9,6 @@
 #include <chrono>
 
 void device_handler::send_upgrade_response(const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& upgrade_request) {
-    //m_conn_ptr = conn_ptr;
-
     hc::http::response upgrade_response;
     upgrade_response.set_status("101 Switching Protocols");
     upgrade_response.add_header("Connection", "upgrade");
@@ -56,7 +54,11 @@ void device_handler::send_and_forward_response(std::weak_ptr<ws_handler> user_ha
 
 void device_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) {
     std::string data = conn_ptr->recv();
-    
+    if (conn_ptr->is_closed()) {
+        hc::util::logger::dbg("device connection closed!");
+        return;
+    }
+
     hc::util::logger::dbg("received device message");
     
     hc::api::client_packet packet;
@@ -69,35 +71,37 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
         return;
     }
 
+    handle_packet(state, conn_ptr, data, packet);
+}
+
+void device_handler::handle_packet(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data, const hc::api::client_packet& packet) {
     hc::api::client_packet res;
     bool need_send = true;
-
+    
     if (packet.get_magic() != hc::api::info::MAGIC) {
         hc::util::logger::dbg("packet had invalid magic value");
         res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x01 }); // error code 0x01 for invalid protocol version
+        return;
     }
 
-    else {
-
-        switch(packet.get_opcode()) {
-            case hc::api::client_packet::opcode::AUTHENTICATE:
-                res = handle_authenticate(state, packet);
-                break;
-            case hc::api::client_packet::opcode::NOTIFICATION:
-                handle_notification(packet);
-                need_send = false;
-                break;
-            case hc::api::client_packet::opcode::RESPONSE:
-                handle_response(state, conn_ptr, data);
-                need_send = false;
-                break;
-            default:
-                hc::util::logger::dbg("device sent packet with invalid opcode");
-                res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x03 });
-                break;
-        }
-
+    switch(packet.get_opcode()) {
+        case hc::api::client_packet::opcode::AUTHENTICATE:
+            res = handle_authenticate(state, packet);
+            break;
+        case hc::api::client_packet::opcode::NOTIFICATION:
+            handle_notification(packet);
+            need_send = false;
+            break;
+        case hc::api::client_packet::opcode::RESPONSE:
+            handle_response(state, conn_ptr, data);
+            need_send = false;
+            break;
+        default:
+            hc::util::logger::dbg("device sent packet with invalid opcode");
+            res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x03 });
+            break;
     }
+
 
     if (need_send) {
         res.set_message_id(packet.get_message_id());
@@ -204,11 +208,9 @@ void device_handler::handle_response(const state& state, const hc::net::ssl::ser
     }
 
     try {
-        //user_conn_ptr->write(data);
-        //user_conn_ptr->perform_send(conn_ptr);
         user_handler_ptr->send_response(data);
 
-        hc::util::logger::dbg("[" + m_device_ptr->get_id() + "] -> User");
+        hc::util::logger::dbg("[" + m_device_ptr->get_id() + "] -> [" + m_user_ptr->get_id() + "]");
     } catch(hc::exception& e) {
         hc::util::logger::dbg("failed to forward message to user: " + std::string(e.what()));
     }

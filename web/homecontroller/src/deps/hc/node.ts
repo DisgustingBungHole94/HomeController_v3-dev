@@ -11,9 +11,10 @@ type StateUpdateCallback = (device: Device, state: State) => void;
 
 export interface DeviceInfo {
     device: Device,
+
     onConnect: ConnectCallback,
     onDisconnect: DisconnectCallback,
-    onStateUpdate: StateUpdateCallback
+    onStateUpdate: StateUpdateCallback,
 };
 
 class NodeConnection {
@@ -71,8 +72,6 @@ class NodeConnection {
                 if (!packet.parse(new Uint8Array(e.data))) {
                     return;
                 }
-
-                console.log(packet);
 
                 switch(packet.getOpcode()) {
                     case Opcode.AUTHENTICATE:
@@ -248,7 +247,7 @@ class NodeConnectionManager {
                 device: device,
                 onConnect: () => void {},
                 onDisconnect: () => void {},
-                onStateUpdate: () => void {}
+                onStateUpdate: () => void {},
             };
 
             this.deviceList.set(device.id, deviceState);
