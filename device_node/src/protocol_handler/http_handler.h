@@ -13,7 +13,7 @@ class http_handler : public protocol_handler {
         void init();
 
     private:
-        void on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data) override;
+        void on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) override;
 
         hc::http::response process_request(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data, const hc::http::request& request);
 

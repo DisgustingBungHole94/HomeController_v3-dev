@@ -8,8 +8,8 @@
 #include <homecontroller/exception.h>
 #include <chrono>
 
-void device_handler::init(const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& upgrade_request) {
-    m_conn_ptr = conn_ptr;
+void device_handler::send_upgrade_response(const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& upgrade_request) {
+    //m_conn_ptr = conn_ptr;
 
     hc::http::response upgrade_response;
     upgrade_response.set_status("101 Switching Protocols");
@@ -37,27 +37,34 @@ void device_handler::on_destroyed(const state& state) {
     }
 }
 
-void device_handler::send_and_forward_response(std::weak_ptr<hc::net::ws::server_wrapper> conn_hdl, const std::string& data) {
+void device_handler::send_and_forward_response(std::weak_ptr<ws_handler> user_handler_ptr, const std::string& data) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    if (m_user_message_queue.size() > 1000) {
+    if (m_user_queue.size() > 1000) {
         throw hc::exception("too many messages in queue", "device_handler::send_and_forward_response");
     }
 
-    m_user_message_queue.push(conn_hdl);
+    hc::net::ssl::server_conn_ptr conn_ptr;
+    if (!(conn_ptr = m_conn_hdl.lock())) {
+        throw hc::exception("device connection expired", "device_handler::send_and_forward_response");
+    } 
 
-    m_conn_ptr->send(data);
+    m_user_queue.push(user_handler_ptr);
+
+    conn_ptr->send(data);
 }
 
-void device_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data) {
+void device_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) {
+    std::string data = conn_ptr->recv();
+    
     hc::util::logger::dbg("received device message");
     
     hc::api::client_packet packet;
-
     try {
         packet.parse(data);
     } catch(hc::exception& e) {
         hc::util::logger::dbg("failed to parse packet: " + std::string(e.what()));
+        
         state.m_server->close_connection(conn_ptr);
         return;
     }
@@ -70,94 +77,69 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
         res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x01 }); // error code 0x01 for invalid protocol version
     }
 
-    else if (!m_authenticated) {
-        if (!authenticate(state, packet)) {
-            res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x02 }); // error code 0x02 for auth fail
+    else {
+
+        switch(packet.get_opcode()) {
+            case hc::api::client_packet::opcode::AUTHENTICATE:
+                res = handle_authenticate(state, packet);
+                break;
+            case hc::api::client_packet::opcode::NOTIFICATION:
+                handle_notification(packet);
+                need_send = false;
+                break;
+            case hc::api::client_packet::opcode::RESPONSE:
+                handle_response(state, conn_ptr, data);
+                need_send = false;
+                break;
+            default:
+                hc::util::logger::dbg("device sent packet with invalid opcode");
+                res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x03 });
+                break;
         }
 
-        else {
-            hc::util::logger::dbg("successfully authenticated!");
-            m_authenticated = true;
-
-            res = hc::api::client_packet(hc::api::client_packet::opcode::AUTHENTICATE, { 0x00 });
-        }
-    }
-
-    else if (packet.get_opcode() == hc::api::client_packet::opcode::NOTIFICATION) {
-        hc::api::state state;
-
-        try {
-            state.parse(packet.get_data());
-            m_device_ptr->set_state(state);
-
-            for (auto& x : m_user_ptr->get_associated_handlers()) {
-                x->send_notification_packet(m_device_ptr->get_id(), packet.get_data());
-            }
-        } catch(hc::exception& e) {
-            hc::util::logger::dbg("failed to forward device notification: " + std::string(e.what()));
-        }
-
-        need_send = false;
-    }
-
-    else if (packet.get_opcode() == hc::api::client_packet::opcode::RESPONSE) {
-        if (m_user_message_queue.empty()) {
-            state.m_server->close_connection(m_conn_ptr);
-            throw hc::exception("unrecoverable error; device is misbehaving", "hc::device_handler::on_data");
-        }
-
-        std::weak_ptr<hc::net::ws::server_wrapper> user_conn_hdl = m_user_message_queue.front();
-        std::shared_ptr<hc::net::ws::server_wrapper> user_conn_ptr;
-
-        if (!(user_conn_ptr = user_conn_hdl.lock()) || user_conn_ptr->is_closed()) {
-            hc::util::logger::dbg("failed to forward message, user disconnected");
-        } else {
-            try {
-                user_conn_ptr->send(data);
-            } catch(hc::exception& e) {
-                hc::util::logger::dbg("failed to forward message to user: " + std::string(e.what()));
-            }
-        }
-
-        m_user_message_queue.pop();
-        need_send = false;
-    } else {
-        hc::util::logger::dbg("device sent packet with invalid opcode");
-        res = hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x03 }); // error code 0x03 for bad opcode
     }
 
     if (need_send) {
         res.set_message_id(packet.get_message_id());
         res.set_device_id(packet.get_device_id());
 
-        m_conn_ptr->send(res.serialize());
+        conn_ptr->send(res.serialize());
     }
 }
 
-bool device_handler::authenticate(const state& state, const hc::api::client_packet& packet) {
+
+hc::api::client_packet device_handler::handle_authenticate(const state& state, const hc::api::client_packet& packet) {
+    hc::api::client_packet err_packet(hc::api::client_packet::opcode::ERROR, { 0x02 });
+    
+    if (m_authenticated) {
+        return err_packet;
+    }
+
+    hc::util::logger::dbg("authenticating device...");
+
     if (packet.get_opcode() != hc::api::client_packet::opcode::AUTHENTICATE) {
         hc::util::logger::dbg("client never sent auth packet");
-        return false;
+        return err_packet;
     }
     
     if (packet.get_data_length() < hc::api::info::TICKET_LENGTH + hc::api::state::MIN_STATE_SIZE) {
         hc::util::logger::dbg("bad auth packet");
-        return false;
+        return err_packet;
     }
 
     if (packet.get_data().size() < hc::api::info::TICKET_LENGTH + hc::api::state::MIN_STATE_SIZE) {
         hc::util::logger::dbg("bad auth packet");
-        return false;
+        return err_packet;
     }
 
     std::string state_data = packet.get_data().substr(hc::api::info::TICKET_LENGTH);
+    
     hc::api::state initial_state;
-
     try {
         initial_state.parse(state_data);
     } catch(hc::exception& e) {
         hc::util::logger::dbg("failed to parse initial device state: " + std::string(e.what()));
-        return false;
+        return err_packet;
     }
 
     std::string ticket = packet.get_data().substr(0, hc::api::info::TICKET_LENGTH);
@@ -170,15 +152,66 @@ bool device_handler::authenticate(const state& state, const hc::api::client_pack
         m_device_ptr->set_state(initial_state);
 
         hc::util::logger::dbg("device is powered " + std::string((initial_state.get_power() == hc::api::state::power::ON) ? "on" : "off"));
-        hc::util::logger::dbg("device state data: " + initial_state.get_data());
     } catch(hc::exception& e) {
         hc::util::logger::dbg("failed to validate device ticket: " + std::string(e.what()));
-        return false;
+        return err_packet;
     }
 
     for(auto& x : m_user_ptr->get_associated_handlers()) {
-        x->send_connect_packet(m_device_ptr->get_id(), state_data);
+        try {
+            x->send_connect_packet(m_device_ptr->get_id(), state_data);
+        } catch(hc::exception& e) {
+            hc::util::logger::dbg("failed to send connect notification to user: " + std::string(e.what()));
+        }
     }
 
-    return true;
+    hc::util::logger::dbg("device authenticated!");
+
+    m_authenticated = true;
+
+    return hc::api::client_packet(hc::api::client_packet::opcode::AUTHENTICATE, { 0x00 });
+}
+
+void device_handler::handle_notification(const hc::api::client_packet& packet) {
+    hc::util::logger::dbg("[" + m_device_ptr->get_id() + "] -> *");
+    
+    hc::api::state state;
+    try {
+        state.parse(packet.get_data());
+
+        m_device_ptr->set_state(state);
+
+        for (auto& x : m_user_ptr->get_associated_handlers()) {
+            x->send_notification_packet(m_device_ptr->get_id(), packet.get_data());
+        }
+    } catch(hc::exception& e) {
+        hc::util::logger::dbg("failed to forward device notification: " + std::string(e.what()));
+    }
+}
+
+void device_handler::handle_response(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data) {
+    if (m_user_queue.empty()) {
+        state.m_server->close_connection(conn_ptr);
+        throw hc::exception("unrecoverable error; device is misbehaving", "hc::device_handler::handle_response");
+    }
+
+    std::weak_ptr<ws_handler> user_handler_hdl = m_user_queue.front();
+    
+    std::shared_ptr<ws_handler> user_handler_ptr;
+    if (!(user_handler_ptr = user_handler_hdl.lock())) {
+        hc::util::logger::dbg("failed to forward message, user disconnected");
+        return;
+    }
+
+    try {
+        //user_conn_ptr->write(data);
+        //user_conn_ptr->perform_send(conn_ptr);
+        user_handler_ptr->send_response(data);
+
+        hc::util::logger::dbg("[" + m_device_ptr->get_id() + "] -> User");
+    } catch(hc::exception& e) {
+        hc::util::logger::dbg("failed to forward message to user: " + std::string(e.what()));
+    }
+
+    m_user_queue.pop();
 }

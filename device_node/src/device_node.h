@@ -24,7 +24,7 @@ class device_node : public std::enable_shared_from_this<device_node> {
 
         void loop();
 
-        void client_job(hc::net::ssl::server_conn_ptr conn_ptr, std::string data);
+        //void client_job(hc::net::ssl::server_conn_ptr conn_ptr);
 
         state m_state;
 

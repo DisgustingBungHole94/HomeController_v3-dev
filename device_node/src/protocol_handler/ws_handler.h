@@ -8,26 +8,37 @@
 
 class ws_handler : public protocol_handler, public std::enable_shared_from_this<ws_handler> {
     public:
-        ws_handler()
-            : m_authenticated(false)
+        ws_handler(hc::net::ssl::server_conn_ptr conn_ptr)
+            : m_conn_hdl(conn_ptr), m_authenticated(false)
         {}
 
         ~ws_handler() {}
 
-        void init(const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& upgrade_request);
+        void send_upgrade_response(const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& upgrade_request);
 
         void on_destroyed(const state& state) override;
 
+        void send_response(const std::string& data);
+
         void send_connect_packet(const std::string& device_id, const std::string& data);
+        void send_connect_packet(hc::net::ssl::server_conn_ptr conn_ptr, std::string& device_id, const std::string& data);
+
         void send_disconnect_packet(const std::string& device_id);
         void send_notification_packet(const std::string& device_id, const std::string& data);
 
     private:
-        void on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data) override;
+        void on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) override;
 
-        bool authenticate(const state& state, const hc::api::client_packet& packet);
+        hc::api::client_packet handle_authenticate(const state& state, const hc::api::client_packet& packet);
+        bool send_to_device(const std::string& device_id, const std::string& data);
 
-        std::shared_ptr<hc::net::ws::server_wrapper> m_ws_wrapper_ptr;
+        hc::net::ssl::server_conn_hdl m_conn_hdl;
+
+        //bool authenticate(const state& state, const hc::api::client_packet& packet);
+
+        //std::shared_ptr<hc::net::ws::server_wrapper> m_ws_wrapper_ptr;
+        
+        hc::net::ws::server_wrapper m_ws_wrapper;
 
         bool m_authenticated;
         //std::string m_user_id;

@@ -14,7 +14,7 @@ class protocol_handler {
 
         ~protocol_handler() {}
 
-        virtual void execute(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data);
+        virtual void execute(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr);
 
         virtual void on_destroyed(const state& state);
 
@@ -25,7 +25,7 @@ class protocol_handler {
         std::shared_ptr<protocol_handler> get_new_protocol() { return m_new_protocol; }
 
     protected:
-        virtual void on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data);
+        virtual void on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr);
 
         bool m_destroyed;
 

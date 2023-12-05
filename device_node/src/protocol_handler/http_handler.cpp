@@ -14,7 +14,9 @@ void http_handler::init() {
     m_http_parser.init(hc::http::parser::type::REQUEST);
 }
 
-void http_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr, const std::string& data) {
+void http_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) {
+    std::string data = conn_ptr->recv();
+    
     try {
         if (!m_http_parser.parse(data)) {
             hc::util::logger::dbg("partial http request processed, awaiting more data...");
@@ -105,7 +107,7 @@ bool http_handler::handle_upgrade(const hc::net::ssl::server_conn_ptr& conn_ptr,
         hc::util::logger::dbg("upgrade HTTP -> WebSocket");
 
         std::shared_ptr<ws_handler> new_protocol = std::make_shared<ws_handler>();
-        new_protocol->init(conn_ptr, data); // wrap connection
+        new_protocol->send_upgrade_response(conn_ptr, data);
 
         m_new_protocol = std::move(new_protocol);
     } 
@@ -113,8 +115,8 @@ bool http_handler::handle_upgrade(const hc::net::ssl::server_conn_ptr& conn_ptr,
     else if (upgrade_type == hc::api::info::DEVICE_UPGRADE_SCHEMA + "/" + hc::api::info::VERSION) {
         hc::util::logger::dbg("upgrade HTTP -> " + hc::api::info::DEVICE_UPGRADE_SCHEMA + "/" + hc::api::info::VERSION);
 
-        std::shared_ptr<device_handler> new_protocol = std::make_shared<device_handler>();
-        new_protocol->init(conn_ptr, data);
+        std::shared_ptr<device_handler> new_protocol = std::make_shared<device_handler>(conn_ptr);
+        new_protocol->send_upgrade_response(conn_ptr, data);
 
         m_new_protocol = std::move(new_protocol);
     }
