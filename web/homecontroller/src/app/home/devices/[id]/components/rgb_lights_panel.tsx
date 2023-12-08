@@ -97,7 +97,7 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
 
         myConnManager.send(nodeId, packet)
         .catch(() => {
-            errorContext?.setError('Failed to toggle power!');
+            errorContext?.setError('Failed to set color!');
         })
     };
 
