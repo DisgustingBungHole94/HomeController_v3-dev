@@ -29,7 +29,8 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
     const [deviceNote, setDeviceNote] = useState('');
 
     const [pickerColor, setPickerColor] = useState('#000');
-
+    const [selectedProgram, setSelectedProgram] = useState('none');
+ 
     const [colorDisplayComponent, setColorDisplayComponent] = useState<React.ReactElement | null>(null);
 
     const [power, setPower] = useState<boolean>(false);
@@ -64,6 +65,15 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
 
         setSpeed(state.getSpeed());
         setProgram(state.getProgram());
+
+        switch(state.getProgram()) {
+            case Program.NONE:
+                setSelectedProgram('none');
+                break;
+            case Program.RAINBOW_FADE:
+                setSelectedProgram('rainbow_fade');
+                break;
+        }
     }, [deviceContext]);
 
     const togglePower = async () => {
@@ -101,6 +111,40 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
         })
     };
 
+    const startProgram = (program: Program) => {
+        const packet = new ClientPacket();
+        packet.setMessageId(0x00000000);
+        packet.setOpcode(Opcode.DATA);
+        packet.setDeviceIdFromStr(deviceId);
+
+        const state = new RGBLightsState();
+        state.setR(0x00);
+        state.setG(0x00);
+        state.setB(0x00);
+        state.setSpeed(speed);
+        state.setProgram(program);
+
+        packet.setDataFromArray(state.serialize());
+
+        myConnManager.send(nodeId, packet)
+        .catch(() => {
+            errorContext?.setError('Failed to start program!');
+        })
+    };
+
+    const updateProgram = (e: any) => {
+        switch(e.target.value) {
+            case 'none':
+                startProgram(Program.NONE);
+                break;
+            case 'rainbow_fade':
+                startProgram(Program.RAINBOW_FADE);
+                break;
+            default:
+                break;
+        };
+    };
+
     return (
         <div className="p-6" style={{
             backgroundImage: 'linear-gradient(transparent, rgba(' + color.r + ', ' + color.g + ', ' + color.b + ', 0.2) 15%, transparent)'
@@ -136,7 +180,14 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
                     </div>
                 </div>
                 <div className="md:w-1/3 bg-white text-center m-2 p-5 rounded shadow">
-                    <h1 className="text-2xl text-gray-600">Program</h1>
+                    <h1 className="text-2xl text-gray-600 pb-5">Program</h1>
+                    <select
+                        onChange={updateProgram}
+                        value={selectedProgram}
+                    >
+                        <option value="none">None</option>
+                        <option value="rainbow_fade">Rainbow Fade</option>
+                    </select>
                 </div>
             </div>
         </div>

@@ -89,7 +89,7 @@ namespace ssl {
     }
 
     void connection::send(const std::string& data) {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        //std::lock_guard<std::mutex> lock(m_mutex);
 
         if (m_closed) {
             throw exception("socket is closed", "hc::net::ssl::connection::send");
@@ -106,6 +106,9 @@ namespace ssl {
                         util::logger::err("underlying socket error");
                     }
                     return;
+                case SSL_ERROR_WANT_WRITE:
+                    send(data);
+                    break;
                     break;
                 default:
                     util::logger::err("openssl error: " + error_str());

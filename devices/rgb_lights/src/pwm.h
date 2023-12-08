@@ -11,7 +11,7 @@ class PWM {
 
         static void analog_write(unsigned int pin, float value);
 
-        static void reset_pins();
+        static void reset();
         static void release_pin(unsigned int pin);
 
         static void stop();

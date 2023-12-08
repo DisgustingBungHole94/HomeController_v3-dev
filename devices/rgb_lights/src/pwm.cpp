@@ -34,7 +34,7 @@ void PWM::analog_write(unsigned int pin, float value) {
     }
 }
 
-void PWM::reset_pins() {
+void PWM::reset() {
     if (!_init) return;
 
     std::lock_guard<std::mutex> lock(_mutex);

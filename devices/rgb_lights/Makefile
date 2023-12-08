@@ -15,6 +15,13 @@ LIBS += -lpthread
 LIBS += -lssl
 LIBS += -lhomecontroller
 
+# programs
+_OBJECTS += programs/program.o
+_HEADERS += programs/program.h
+
+_OBJECTS += programs/rainbow_fade_program.o
+_HEADERS += programs/rainbow_fade_program.h
+
 # root
 _OBJECTS += main.o
 
