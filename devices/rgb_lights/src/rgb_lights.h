@@ -11,7 +11,7 @@
 class rgb_lights {
     public:
         rgb_lights() 
-            : m_running(false), m_program_running(false), m_needs_power_on(false)
+            : m_running(false), m_program_running(false), m_needs_power_on(false), m_num_sends_limited(0)
         {}
 
         ~rgb_lights() {}
@@ -19,7 +19,7 @@ class rgb_lights {
         bool start();
         void shutdown();
 
-        bool set_color_and_state(uint8_t r, uint8_t g, uint8_t b);
+        bool set_color_and_state(uint8_t r, uint8_t g, uint8_t b, bool limit = false);
 
     private:
         void turn_on_callback();
@@ -48,6 +48,8 @@ class rgb_lights {
         uint8_t m_last_r;
         uint8_t m_last_g;
         uint8_t m_last_b;
+
+        int m_num_sends_limited;
         
         std::mutex m_mutex;
 };

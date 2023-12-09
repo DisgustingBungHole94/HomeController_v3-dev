@@ -87,12 +87,49 @@ void rgb_lights::shutdown() {
     m_device.stop();
 }
 
+bool rgb_lights::set_color_and_state(uint8_t r, uint8_t g, uint8_t b, bool limit) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    PWM::analog_write(PWM::PWM_PIN_R, r / 255.0f);
+    PWM::analog_write(PWM::PWM_PIN_G, g / 255.0f);
+    PWM::analog_write(PWM::PWM_PIN_B, b / 255.0f);
+    
+    static const int SEND_THRESHOLD = 10;
+
+    if (limit) {
+        if (m_num_sends_limited < SEND_THRESHOLD) {
+            m_num_sends_limited++;
+            return true;
+        }
+
+        m_num_sends_limited = 0;
+    }
+    
+    m_state.set_r(r);
+    m_state.set_g(g);
+    m_state.set_b(b);
+
+    hc::api::state new_state = m_device.get_state();
+    new_state.set_data(m_state.serialize());
+
+    try {
+        m_device.set_state(new_state);
+    } catch(hc::exception& e) {
+        if (m_running) {
+            hc::util::logger::err("failed to update device state: " + std::string(e.what()));
+        }
+    }
+
+    return true;
+}
+
 void rgb_lights::turn_on_callback() {
     hc::util::logger::log("switching on!");
 
     if (m_program_running) {
         m_program_ptr->unpause();
     } else {
+        //set_color_and_state(m_last_r, m_last_g, m_last_b);
         perform_fade(m_last_r, m_last_g, m_last_b);
     }
 }
@@ -108,6 +145,7 @@ void rgb_lights::turn_off_callback() {
         m_last_b = m_state.get_b();
     }
 
+    //set_color_and_state(0x00, 0x00, 0x00);
     perform_fade(0x00, 0x00, 0x00);
 }
 
@@ -129,9 +167,9 @@ std::string rgb_lights::data_callback(std::string data) {
     } else {
         if (m_state.get_program() != hc::api::rgb_lights_state::program::NONE) {
             stop_program();
+        } else {
+            res = set_color(new_state.get_r(), new_state.get_g(), new_state.get_b()) ? 0x00: 0x04; // 0x04: failed to set color
         }
-
-        res = set_color(new_state.get_r(), new_state.get_g(), new_state.get_b()) ? 0x00: 0x04; // 0x04: failed to set color
     }
 
     hc::api::state device_state = m_device.get_state();
@@ -191,7 +229,7 @@ void rgb_lights::perform_fade(uint8_t target_r, uint8_t target_g, uint8_t target
 
         set_color_and_state(r, g, b);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(3));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 
@@ -204,6 +242,10 @@ bool rgb_lights::start_program(hc::api::rgb_lights_state::program program_type) 
     if (mit == programs.end()) {
         return false;
     }
+
+    m_last_r = m_state.get_r();
+    m_last_g = m_state.get_g();
+    m_last_b = m_state.get_b();
 
     std::unique_ptr<program> program_ptr;
     program_ptr.reset(mit->second());
@@ -242,6 +284,8 @@ void rgb_lights::stop_program() {
 
         m_state.set_program(hc::api::rgb_lights_state::program::NONE);
 
+        set_color(m_last_r, m_last_g, m_last_b);
+
         hc::util::logger::log("program stopped!");
     }
 }
@@ -270,31 +314,6 @@ bool rgb_lights::set_color(uint8_t r, uint8_t g, uint8_t b) {
     m_state.set_b(b);
 
     hc::util::logger::log("setting color! r: " + std::to_string(r) + " g: " + std::to_string(g) + " b: " + std::to_string(b));
-
-    return true;
-}
-
-bool rgb_lights::set_color_and_state(uint8_t r, uint8_t g, uint8_t b) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    
-    PWM::analog_write(PWM::PWM_PIN_R, r / 255.0f);
-    PWM::analog_write(PWM::PWM_PIN_G, g / 255.0f);
-    PWM::analog_write(PWM::PWM_PIN_B, b / 255.0f);
-    
-    m_state.set_r(r);
-    m_state.set_g(g);
-    m_state.set_b(b);
-
-    hc::api::state new_state = m_device.get_state();
-    new_state.set_data(m_state.serialize());
-
-    try {
-        m_device.set_state(new_state);
-    } catch(hc::exception& e) {
-        if (m_running) {
-            hc::util::logger::err("failed to update device state: " + std::string(e.what()));
-        }
-    }
 
     return true;
 }

@@ -5,5 +5,5 @@
     "tls_priv_key_file": "./cert/privkey.pem",
     "max_conns": 32,
     "conn_expire_time": 5000,
-    "debug_mode": true
+    "debug_mode": false
 }
