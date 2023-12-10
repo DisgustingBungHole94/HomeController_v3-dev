@@ -6,7 +6,7 @@ namespace hc {
 namespace api {
 namespace info {
 
-    static const std::string API_HOST =                 "localhost";
+    static const std::string API_HOST =                 "76.236.31.36";
     static const std::string API_PORT =                 "4435";
 
     static const std::string AUTH_SCHEMA =              "HCAuth";
