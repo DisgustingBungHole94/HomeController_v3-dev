@@ -26,8 +26,8 @@ const authManager: AuthManager = new AuthManager();
 const userManager: UserManager = new UserManager();
 const ticketService: TicketService = new TicketService();
 
-const certFile: Buffer = fs.readFileSync('/etc/letsencrypt/live/bunghole.pro/fullchain.pem');
-const privKeyFile: Buffer = fs.readFileSync('/etc/letsencrypt/live/bunghole.pro/privkey.pem');
+const certFile: Buffer = fs.readFileSync('/home/josh/certs/fullchain.pem');
+const privKeyFile: Buffer = fs.readFileSync('/home/josh/certs/privkey.pem');
 
 const app: any = express();
 app.use(express.json());
