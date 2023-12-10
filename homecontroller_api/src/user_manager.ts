@@ -49,7 +49,7 @@ export default class UserManager {
 
         let node: Node = {
             id: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC',
-            host: 'localhost',
+            host: '76.236.31.36',
             port: '4434'
         }
 

@@ -1,6 +1,6 @@
 import { Exception } from "./util/exception";
 
-const apiHost: string = 'localhost';
+const apiHost: string = '76.236.31.36';
 const apiPort: string = '4435';
 
 interface RequestData {
