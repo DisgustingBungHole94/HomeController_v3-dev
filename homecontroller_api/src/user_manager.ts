@@ -49,7 +49,7 @@ export default class UserManager {
 
         let node: Node = {
             id: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC',
-            host: '76.236.31.36',
+            host: 'bunghole.pro',
             port: '4434'
         }
 

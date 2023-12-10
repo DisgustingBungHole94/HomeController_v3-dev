@@ -1,8 +1,8 @@
 {
     "secret": "abc123",
     "server_port": 4434,
-    "tls_cert_file": "./cert/fullchain.pem",
-    "tls_priv_key_file": "./cert/privkey.pem",
+    "tls_cert_file": "/etc/letsencrypt/live/bunghole.pro/fullchain.pem",
+    "tls_priv_key_file": "/etc/letsencrypt/live/bunghole.pro/privkey.pem",
     "max_conns": 32,
     "conn_expire_time": 5000,
     "debug_mode": false
