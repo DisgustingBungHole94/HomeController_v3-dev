@@ -26,8 +26,8 @@ void PWM::analog_write(unsigned int pin, float value) {
 
     std::lock_guard<std::mutex> lock(_mutex);
 
-    _file << std::to_string(pin) << "=" << std::to_string(value) << "\n";
-    _file.flush();
+    //_file << std::to_string(pin) << "=" << std::to_string(value) << "\n";
+    //_file.flush();
 
     if (!_file.good()) {
         hc::util::logger::err("failed to write to pin " + std::to_string(pin) + "!");

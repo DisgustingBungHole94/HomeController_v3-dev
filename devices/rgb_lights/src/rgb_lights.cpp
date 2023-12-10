@@ -167,9 +167,9 @@ std::string rgb_lights::data_callback(std::string data) {
     } else {
         if (m_state.get_program() != hc::api::rgb_lights_state::program::NONE) {
             stop_program();
-        } else {
-            res = set_color(new_state.get_r(), new_state.get_g(), new_state.get_b()) ? 0x00: 0x04; // 0x04: failed to set color
         }
+
+        res = set_color(new_state.get_r(), new_state.get_g(), new_state.get_b()) ? 0x00: 0x04; // 0x04: failed to set color
     }
 
     hc::api::state device_state = m_device.get_state();
@@ -284,7 +284,7 @@ void rgb_lights::stop_program() {
 
         m_state.set_program(hc::api::rgb_lights_state::program::NONE);
 
-        set_color(m_last_r, m_last_g, m_last_b);
+        //set_color(m_last_r, m_last_g, m_last_b);
 
         hc::util::logger::log("program stopped!");
     }
