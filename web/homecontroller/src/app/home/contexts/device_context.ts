@@ -1,7 +1,5 @@
-import { createContext, Dispatch, SetStateAction } from 'react';
-
-import { Device } from '@/deps/hc/api_requests';
-import { State } from '@/deps/hc/state';
+import { createContext } from 'react';
+import { DeviceList, emptyDeviceList } from '@/deps/hc/node';
 
 /*export interface DeviceState {
     device: Device,
@@ -13,7 +11,7 @@ export interface DeviceList {
     devices: Map<string, DeviceState>
 }*/
 
-export interface DeviceState {
+/*export interface DeviceState {
     device: Device,
     state: State
 }
@@ -34,7 +32,7 @@ export function emptyDeviceList(): DeviceList {
     return list;
 }
 
-export type DeviceListState = [DeviceList, Dispatch<SetStateAction<DeviceList>>] | null;
+export type DeviceListState = [DeviceList, Dispatch<SetStateAction<DeviceList>>] | null;*/
 
 export const DeviceContext = createContext<DeviceList>(emptyDeviceList());
 

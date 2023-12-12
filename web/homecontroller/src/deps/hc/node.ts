@@ -3,22 +3,42 @@ import { State } from '@/deps/hc/state';
 import { Exception } from '@/deps/hc/util/exception';
 import { Device, NodeTicket } from '@/deps/hc/api_requests'
 
-//import { DeviceListState, DeviceList, DeviceState, emptyDeviceList, updateDeviceList } from '@/app/home/contexts/device_context'
+import { useState, Dispatch, SetStateAction } from 'react';
 
-type ConnectCallback = (device: Device, state: State) => void;
-type DisconnectCallback = (device: Device) => void;
-type StateUpdateCallback = (device: Device, state: State) => void;
+
+//import { DeviceList, DeviceState, emptyDeviceList, updateDeviceList } from '@/app/home/contexts/device_context'
+
+type DeviceChangedCallback = (deviceInfo: DeviceInfo) => void;
+//type DeviceDisconnectCallback = (deviceInfo: DeviceInfo) => void;
+type DeviceStateUpdateCallback = (device: Device, state: State) => void;
+
+export interface DeviceList {
+    onlineDevices: Map<string, DeviceInfo>,
+    offlineDevices: Map<string, Device>,
+    loading: boolean
+}
+
+export function emptyDeviceList(): DeviceList {
+    let deviceList: DeviceList = {
+        onlineDevices: new Map<string, DeviceInfo>(),
+        offlineDevices: new Map<string, Device>(),
+        loading: true
+    };
+    
+    return deviceList;
+}
 
 export interface DeviceInfo {
     device: Device,
-
-    onConnect: ConnectCallback,
-    onDisconnect: DisconnectCallback,
-    onStateUpdate: StateUpdateCallback,
+    lastState: State,
+    onStateUpdateCallbacks: Map<string, DeviceStateUpdateCallback>
 };
 
 class NodeConnection {
     public onClose: () => void;
+    public onDeviceConnect: DeviceChangedCallback;
+    public onDeviceDisconnect: DeviceChangedCallback;
+    public onDeviceStateUpdate: DeviceChangedCallback;
 
     private deviceList: Map<string, DeviceInfo>;
 
@@ -33,7 +53,10 @@ class NodeConnection {
     private authenticated: boolean;
 
     constructor(host: string, port: string, deviceList: Map<string, DeviceInfo>) {
-        this.onClose = () => {};
+        this.onClose = () => void {};
+        this.onDeviceConnect = (deviceInfo: DeviceInfo) => void {};
+        this.onDeviceDisconnect = (deviceInfo: DeviceInfo) => void {};
+        this.onDeviceStateUpdate = (deviceInfo: DeviceInfo) => void {};
 
         this.deviceList = deviceList;
         
@@ -147,7 +170,9 @@ class NodeConnection {
             return false;
         }
 
-        deviceInfo.onStateUpdate(deviceInfo.device, state);
+        deviceInfo.lastState = state;
+        this.onDeviceStateUpdate(deviceInfo);
+        //deviceInfo.onStateUpdate(deviceInfo.device, state);
 
         return true;
     }
@@ -164,7 +189,9 @@ class NodeConnection {
             return false;
         }
 
-        deviceInfo.onConnect(deviceInfo.device, state);
+        deviceInfo.lastState = state;
+        this.onDeviceConnect(deviceInfo);
+        //deviceInfo.onConnect(deviceInfo.device, state);
 
         return true;
     }
@@ -175,7 +202,8 @@ class NodeConnection {
             return false;
         }
 
-        deviceInfo.onDisconnect(deviceInfo.device);
+        this.onDeviceDisconnect(deviceInfo);
+        //deviceInfo.onDisconnect(deviceInfo.device);
         
         return true;
     }
@@ -223,6 +251,8 @@ class NodeConnection {
 class NodeConnectionManager {
     public onDisconnect: () => void;
 
+    public devicesState: [DeviceList, Dispatch<SetStateAction<DeviceList>>] | null;
+
     private deviceList: Map<string, DeviceInfo>;
 
     private connections: Map<string, NodeConnection>;
@@ -230,6 +260,8 @@ class NodeConnectionManager {
 
     constructor() {
         this.onDisconnect = () => {};
+
+        this.devicesState = null;
 
         this.deviceList = new Map<string, DeviceInfo>();
 
@@ -242,16 +274,22 @@ class NodeConnectionManager {
     }
 
     public setDeviceList(devices: Array<Device>) {
+        if (!this.devicesState) {
+            return;
+        }
+
         devices.forEach((device) => {
             let deviceState = {
                 device: device,
-                onConnect: () => void {},
-                onDisconnect: () => void {},
-                onStateUpdate: () => void {},
+                lastState: new State(),
+                onStateUpdateCallbacks: new Map<string, DeviceStateUpdateCallback>()
             };
 
             this.deviceList.set(device.id, deviceState);
+            this.devicesState![0].offlineDevices.set(device.id, device);
         });
+
+        this.updateState();
     }
 
     public getDeviceList(): Map<string, DeviceInfo> {
@@ -259,20 +297,48 @@ class NodeConnectionManager {
     }
 
     public async connect(nodes: Array<NodeTicket>) { 
-        const onCloseCallback = () => {
+        if (!this.devicesState) {
+            return;
+        }
+
+        const onClose = () => {
             this.connected = false;
             this.onDisconnect();
+        };
+
+        const onDeviceConnect = (deviceInfo: DeviceInfo) => {                
+            this.devicesState![0].offlineDevices.delete(deviceInfo.device.id);
+            this.devicesState![0].onlineDevices.set(deviceInfo.device.id, deviceInfo);
+            this.updateState();
+        };
+
+        const onDeviceDisconnect = (deviceInfo: DeviceInfo) => {                
+            this.devicesState![0].onlineDevices.delete(deviceInfo.device.id);
+            this.devicesState![0].offlineDevices.set(deviceInfo.device.id, deviceInfo.device);
+            this.updateState();
+        };
+
+        const onDeviceStateUpdate = (deviceInfo: DeviceInfo) => {
+            deviceInfo.onStateUpdateCallbacks.forEach((callback) => {
+                callback(deviceInfo.device, deviceInfo.lastState);
+            });
         };
         
         for(let i = 0; i < nodes.length; i++) {
             if (!this.connections.has(nodes[i].node.id)) {
                 const connection = new NodeConnection(nodes[i].node.host, nodes[i].node.port, this.deviceList);
-                connection.onClose = onCloseCallback;
+                connection.onClose = onClose;
+                connection.onDeviceConnect = onDeviceConnect;
+                connection.onDeviceDisconnect = onDeviceDisconnect;
+                connection.onDeviceStateUpdate = onDeviceStateUpdate;
 
                 await connection.connect(nodes[i].ticket);
                 this.connections.set(nodes[i].node.id, connection);
             }
         }
+
+        this.devicesState[0].loading = false;
+        this.updateState();
 
         this.connected = true;
     }
@@ -299,12 +365,45 @@ class NodeConnectionManager {
         this.connected = false;
     }
 
-    public setCallbacks(stateUpdateCallback: StateUpdateCallback, connectCallback: ConnectCallback, disconnectCallback: DisconnectCallback) {
-        this.deviceList.forEach((deviceState: DeviceInfo) => {
-            deviceState.onStateUpdate = stateUpdateCallback;
-            deviceState.onConnect = connectCallback;
-            deviceState.onDisconnect = disconnectCallback;
-        });
+    public addCallback(deviceId: string, callbackId: string, callback: DeviceStateUpdateCallback): State | null {
+        const device = this.deviceList.get(deviceId);
+        if (!device) {
+            return null;
+        }
+
+        device.onStateUpdateCallbacks.set(callbackId, callback);
+
+        callback(device.device, device.lastState);
+
+        return device.lastState;
+    }
+
+    public removeCallback(deviceId: string, callbackId: string) {
+        const device = this.deviceList.get(deviceId);
+        if (!device) {
+            return;
+        }
+
+        device.onStateUpdateCallbacks.delete(callbackId);
+    }
+
+    public useState(): DeviceList {
+        this.devicesState = useState<DeviceList>(emptyDeviceList());        
+        return this.devicesState[0];
+    }
+
+    private updateState() {
+        if (!this.devicesState) {
+            return;
+        }
+
+        let newList: DeviceList = {
+            onlineDevices: this.devicesState[0].onlineDevices,
+            offlineDevices: this.devicesState[0].offlineDevices,
+            loading: this.devicesState[0].loading
+        }
+
+        this.devicesState[1](newList);
     }
 }
 

@@ -314,6 +314,6 @@ bool rgb_lights::set_color(uint8_t r, uint8_t g, uint8_t b) {
     m_state.set_b(b);
 
     hc::util::logger::log("setting color! r: " + std::to_string(r) + " g: " + std::to_string(g) + " b: " + std::to_string(b));
-
+    
     return true;
 }

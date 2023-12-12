@@ -47,7 +47,7 @@ namespace ssl {
     }
 
     std::string connection::recv() {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        //std::lock_guard<std::mutex> lock(m_mutex);
 
         if (m_closed) {
             throw exception("socket is closed", "hc::net::ssl::connection::recv");
@@ -68,9 +68,11 @@ namespace ssl {
                     case SSL_ERROR_SYSCALL:
                         if (!m_closed) {
                             m_closed = true;
-                            util::logger::err("underlying socket error");
+                            util::logger::err("underlying socket error (recv, " + std::to_string(errno) + ")");
                         }
                         return "";
+                    case SSL_ERROR_WANT_READ:
+                        return recv();
                     default:
                         util::logger::err("openssl error: " + error_str());
                 }
@@ -89,7 +91,7 @@ namespace ssl {
     }
 
     void connection::send(const std::string& data) {
-        //std::lock_guard<std::mutex> lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
 
         if (m_closed) {
             throw exception("socket is closed", "hc::net::ssl::connection::send");
@@ -103,12 +105,11 @@ namespace ssl {
                 case SSL_ERROR_SYSCALL:
                     if (!m_closed) {
                         m_closed = true;
-                        util::logger::err("underlying socket error");
+                        util::logger::err("underlying socket error (send, " + std::to_string(errno) + ")");
                     }
                     return;
                 case SSL_ERROR_WANT_WRITE:
                     send(data);
-                    break;
                     break;
                 default:
                     util::logger::err("openssl error: " + error_str());

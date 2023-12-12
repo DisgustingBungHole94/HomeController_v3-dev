@@ -3,70 +3,63 @@ import { ErrorContext } from '@/app/home/contexts/error_context';
 import { StatePower } from '@/deps/hc/state';
 import { ClientPacket, Opcode } from '@/deps/hc/client_packet';
 import { myConnManager } from '@/deps/hc/node';
+import { State } from '@/deps/hc/state';
+import { Device } from '@/deps/hc/api_requests';
 import { RGBLightsState, Program } from '@/deps/hc/device_states/rgb_lights_state';
-import ColorDisplayComponent from '@/app/home/devices/[id]/components/color_display_component';
 
-import { SketchPicker } from 'react-color';
+import { SketchPicker, RGBColor } from 'react-color';
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 
 interface RGBLightsPanelProps {
     deviceId: string,
     nodeId: string
 };
 
-interface Color {
-    r: number,
-    g: number,
-    b: number
-}
-
 export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps) {
     const deviceContext = useContext(DeviceContext);
     const errorContext = useContext(ErrorContext);
 
-    const [deviceName, setDeviceName] = useState('Loading...');
+    // for color preview
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    window.addEventListener('resize', () => {
+        setWindowWidth(window.innerWidth);
+    })
+
+    const [deviceName, setDeviceName] = useState('');
     const [deviceNote, setDeviceNote] = useState('');
 
-    const [pickerColor, setPickerColor] = useState('#000');
+    // selected values from UI
+    const [selectedColor, setSelectedColor] = useState<RGBColor>({r: 0, g: 0, b: 0});
     const [selectedProgram, setSelectedProgram] = useState('none');
  
-    const [colorDisplayComponent, setColorDisplayComponent] = useState<React.ReactElement | null>(null);
-
+    // RGBLightsState values
     const [power, setPower] = useState<boolean>(false);
-    const [color, setColor] = useState<Color>({ r: 0, g: 0, b: 0});
     const [speed, setSpeed] = useState<number>(0.0);
     const [program, setProgram] = useState<Program>(Program.NONE);
 
-    useEffect(() => {
-        if (deviceContext.loading) {
-            return;
-        }
-
-        let deviceState = deviceContext.onlineDevices.get(deviceId);
-        if (!deviceState) {
-            return;
-        }
-
-        setDeviceName(deviceState.device.name);
-        setDeviceNote(deviceState.device.note);
-
-        setPower(deviceState.state.getPower() === StatePower.ON);
+    const rebuildPage = (device: Device, state: State) => {
+        setPower(state.getPower() === StatePower.ON);
         
-        const state = new RGBLightsState();
-        if (!state.parse(deviceState.state.getData())) {
+        const rgbLightsState = new RGBLightsState();
+        if (!rgbLightsState.parse(state.getData())) {
             return;
         }
 
-        setColor({r: state.getR(), g: state.getG(), b: state.getB() });
-        setPickerColor('rgb(' + state.getR() + ' ' + state.getG() + ' ' + state.getB() + ')');
+        let color: RGBColor = {
+            r: rgbLightsState.getR(),
+            g: rgbLightsState.getG(),
+            b: rgbLightsState.getB()
+        }
 
-        setColorDisplayComponent(<ColorDisplayComponent deviceId={deviceState.device.id} />)
+        setSelectedColor(color);
+        
+        setSpeed(rgbLightsState.getSpeed());
+        setProgram(rgbLightsState.getProgram());
 
-        setSpeed(state.getSpeed());
-        setProgram(state.getProgram());
-
-        switch(state.getProgram()) {
+        switch(rgbLightsState.getProgram()) {
             case Program.NONE:
                 setSelectedProgram('none');
                 break;
@@ -74,7 +67,60 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
                 setSelectedProgram('rainbow_fade');
                 break;
         }
+
+        updateColorPreview(color);
+    };
+
+    const updateColorPreview = (color: RGBColor) => {
+        const canvas: HTMLCanvasElement | null = canvasRef.current;
+        if (!canvas) {
+            return;
+        }
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+            return;
+        }
+
+        canvas.style.width = '100%';
+        canvas.style.height = '0.5rem';
+
+        context.canvas.width = canvas.getBoundingClientRect().width;
+        context.canvas.height = canvas.getBoundingClientRect().height;
+
+        const RECT_WIDTH = 10;
+        const CANVAS_WIDTH = canvas.width;
+
+        const NUM_RECTS = CANVAS_WIDTH / RECT_WIDTH;
+
+        for(let i = 0; i < NUM_RECTS; i += 2) {
+            context.fillStyle = 'rgb(' + color.r + ' ' + color.g + ' ' + color.b + ')';
+            context.fillRect(i * RECT_WIDTH, 0, RECT_WIDTH, context.canvas.height);
+
+            context.fillStyle = 'rgb(255, 255, 255)';
+            context.fillRect((i + 1) * RECT_WIDTH, 0, RECT_WIDTH, context.canvas.height);
+        }
+    };
+
+    useEffect(() => {
+        if (deviceContext.loading) {
+            return;
+        }
+
+        let deviceInfo = deviceContext.onlineDevices.get(deviceId);
+        if (!deviceInfo) {
+            return;
+        }
+
+        myConnManager.addCallback(deviceInfo.device.id, deviceInfo.device.id + '_RGBLightsPanel', rebuildPage);
+
+        setDeviceName(deviceInfo.device.name);
+        setDeviceNote(deviceInfo.device.note);
     }, [deviceContext]);
+
+    useEffect(() => {
+        updateColorPreview(selectedColor);
+    }, [windowWidth]);
 
     const togglePower = async () => {
         const packet = new ClientPacket();
@@ -89,7 +135,7 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
     };
 
     const updateColor = (color: any, e: any) => {
-        setPickerColor(color);
+        setSelectedColor(color);
         
         const packet = new ClientPacket();
         packet.setMessageId(0x00000000);
@@ -147,18 +193,16 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
 
     return (
         <div className="p-6" style={{
-            backgroundImage: 'linear-gradient(transparent, rgba(' + color.r + ', ' + color.g + ', ' + color.b + ', 0.2) 15%, transparent)'
+            backgroundImage: 'linear-gradient(transparent, rgba(' + selectedColor.r + ', ' + selectedColor.g + ', ' + selectedColor.b + ', 0.3) 15%, transparent)'
         }}>
             <div>
                 <h1 className="text-5xl">{deviceName}</h1>
                 <hr />
                 <h2 className="text-lg text-gray-500 mx-2 my-4">{deviceNote}</h2>
             </div>
-            {colorDisplayComponent && (
-                <div className="my-5">
-                    {colorDisplayComponent}
-                </div>
-            )}
+            <div className="my-5">
+                <canvas ref={canvasRef} />
+            </div>
             <div className="md:flex bg-gray-100 p-6 rounded shadow">
                 <div className="md:w-1/3 bg-white text-center m-2 p-5 rounded shadow">
                     <h1 className="text-2xl text-gray-600 pb-5">Power</h1>
@@ -173,7 +217,7 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
                     <h1 className="text-2xl text-gray-600 pb-5">Color</h1>
                     <div className="place-self-center">
                         <SketchPicker 
-                            color={pickerColor}
+                            color={selectedColor}
                             onChange={updateColor}
                         />
                         <br />

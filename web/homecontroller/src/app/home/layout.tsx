@@ -1,10 +1,10 @@
 'use client';
 
 import { ErrorContext } from '@/app/home/contexts/error_context'
-import { DeviceContext, DeviceList, DeviceState, emptyDeviceList } from '@/app/home/contexts/device_context'
+import { DeviceContext } from '@/app/home/contexts/device_context'
 
 import { connectUser, ConnectUserResponse, Device } from '@/deps/hc/api_requests'
-import { myConnManager } from '@/deps/hc/node';
+import { myConnManager, DeviceList } from '@/deps/hc/node';
 import { State } from '@/deps/hc/state';
 
 import { useEffect, useState } from 'react';
@@ -14,52 +14,12 @@ import Cookies from 'js-cookie';
 
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
     const [error, setError] = useState('');
-
-    const deviceList: DeviceList = emptyDeviceList();
-    const [devices, setDevices] = useState<DeviceList>(deviceList);
+    const devices: DeviceList = myConnManager.useState();
 
     const router = useRouter();
 
     myConnManager.onDisconnect = () => {
-        setDevices(emptyDeviceList());
         setError('Lost connection with server! Please refresh!');
-    };
-
-    const onDeviceStateUpdate = (device: Device, state: State) => {
-        let deviceState: DeviceState = {
-            device: device,
-            state: state
-        };
-
-        deviceList.onlineDevices.set(device.id, deviceState)
-        updateDevicesState();
-    };
-
-    const onDeviceConnect = (device: Device, state: State) => {
-        let deviceState: DeviceState = {
-            device: device,
-            state: state
-        };
-
-        deviceList.offlineDevices.delete(device.id);
-        deviceList.onlineDevices.set(device.id, deviceState);
-        updateDevicesState();
-    };
-
-    const onDeviceDisconnect = (device: Device) => {
-        deviceList.onlineDevices.delete(device.id);
-        deviceList.offlineDevices.set(device.id, device);
-        updateDevicesState();
-    };
-
-    const updateDevicesState = () => {
-        let newList: DeviceList = { 
-            onlineDevices: deviceList.onlineDevices,
-            offlineDevices: deviceList.offlineDevices,
-            loading: deviceList.loading
-        };
-
-        setDevices(newList);
     };
 
     const loadDevices = async () => {
@@ -72,20 +32,10 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
         if (!myConnManager.isConnected()) {
             try {
                 const connectUserResponse: ConnectUserResponse = await connectUser(token!);
-
-                connectUserResponse.devices.forEach((device) => {
-                    deviceList.offlineDevices.set(device.id, device);
-                });
-
                 myConnManager.setDeviceList(connectUserResponse.devices);                
-                myConnManager.setCallbacks(onDeviceStateUpdate, onDeviceConnect, onDeviceDisconnect);
                 
                 await myConnManager.connect(connectUserResponse.nodes);
-
-                deviceList.loading = false;
-                updateDevicesState();
             } catch(e) {
-                setDevices(emptyDeviceList());
                 setError('Unable to connect to server!');
             }
         }

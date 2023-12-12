@@ -62,6 +62,7 @@ namespace api {
                 util::logger::log("disconnected from server");
                 return;
             }
+            
             client_packet req_packet;
             req_packet.parse(req_data);
 

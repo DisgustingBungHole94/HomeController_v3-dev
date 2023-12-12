@@ -19,8 +19,6 @@ export default function DevicePage({ params }: { params: { id: string } }) {
     const [infoText, setInfoText] = useState<string | null>('Loading...');
     const [component, setComponent] = useState<React.ReactElement | null>(null);
 
-    let initialized: boolean = false;
-
     useEffect(() => {
         if (deviceContext.loading) {
             return;
@@ -31,7 +29,29 @@ export default function DevicePage({ params }: { params: { id: string } }) {
             return;
         }
 
-        let deviceState = deviceContext.onlineDevices.get(params.id);
+        let deviceInfo = deviceContext.onlineDevices.get(params.id);
+        if (!deviceInfo) {
+            if (deviceContext.offlineDevices.get(params.id)) {
+                setComponent(null);
+                setInfoText('Device is offline!');
+            } else {
+                setComponent(null);
+                setInfoText('Device not found!');
+            }
+            
+            return;
+        }
+
+        switch(deviceInfo.device.type) {
+            case 'test_device':
+                setComponent(<RGBLightsPanel key={deviceInfo.device.id} deviceId={deviceInfo.device.id} nodeId={deviceInfo.device.nodeId} />);
+                break;
+            default:
+                setInfoText('Unsupported device type!');
+                break;
+        }
+
+        /*let deviceState = deviceContext.onlineDevices.get(params.id);
         if (!deviceState) {
             if(deviceContext.offlineDevices.get(params.id)) {
                 setComponent(null);
@@ -53,7 +73,7 @@ export default function DevicePage({ params }: { params: { id: string } }) {
                     setInfoText('Unsupported device type!');
             }
             initialized = true;
-        }
+        }*/
     }, [deviceContext]);
 
     return (

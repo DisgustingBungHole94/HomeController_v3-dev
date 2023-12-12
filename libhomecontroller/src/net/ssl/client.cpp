@@ -27,7 +27,7 @@ namespace ssl {
 
         unique_ptr<SSL> ssl(SSL_new(m_ssl_ctx.get()));
         if (ssl == nullptr) {
-            throw exception("failed to create ssl for client", "hc::net::ssl::client::run");
+            throw exception("failed to create ssl for client", "hc::net::ssl::client::connect");
         }
 
         addrinfo hints = {};
@@ -39,7 +39,7 @@ namespace ssl {
 
         int err = getaddrinfo(m_host.c_str(), m_port.c_str(), &hints, &addrs);
         if (err != 0) {
-            throw exception("failed to resolve host", "hc::net::ssl::client::run");
+            throw exception("failed to resolve host", "hc::net::ssl::client::connect");
         }
 
         int sd;

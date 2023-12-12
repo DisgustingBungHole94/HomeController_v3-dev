@@ -2,8 +2,6 @@ The Todo List:
 
 Needs immediate attention:
 
-* Remove multithread support from libhomecontroller, it has proven to be too buggy
-
 Listed in order of priority:
 
 1. homecontroller_api: Remove /login/device & /login/user in favor of unified login request

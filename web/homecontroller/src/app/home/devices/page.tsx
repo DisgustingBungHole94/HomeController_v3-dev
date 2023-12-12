@@ -7,6 +7,9 @@ import OnlineDeviceComponent from '@/app/home/devices/components/online_device_c
 import OfflineDeviceComponent from '@/app/home/devices/components/offline_device_component';
 
 import React, { useContext, useEffect, useState } from 'react';
+import { Device } from '@/deps/hc/api_requests';
+import { State } from '@/deps/hc/state';
+import { myConnManager } from '@/deps/hc/node';
 
 export default function DevicesPage() {
     let deviceContext = useContext(DeviceContext);
@@ -15,17 +18,13 @@ export default function DevicesPage() {
     const [onlineDevices, setOnlineDevices] = useState<React.ReactElement[]>([]);
     const [offlineDevices, setOfflineDevices] = useState<React.ReactElement[]>([]);
 
-    useEffect(() => {
-        if (deviceContext.loading) {
-            return;
-        }
-
+    const rebuildPage = () => {
         const onlineDevicesArr: React.ReactElement[] = [];
         const offlineDevicesArr: React.ReactElement[] = [];
 
-        deviceContext.onlineDevices.forEach((deviceState) => {
-            let device = deviceState.device;
-            onlineDevicesArr.push(<OnlineDeviceComponent key={device.id} deviceId={device.id} nodeId={device.nodeId} state={deviceState.state} deviceName={device.name} deviceNote={device.note} />)
+        deviceContext.onlineDevices.forEach((deviceInfo) => {
+            let device = deviceInfo.device;
+            onlineDevicesArr.push(<OnlineDeviceComponent key={device.id} deviceId={device.id} nodeId={device.nodeId} state={deviceInfo.lastState} deviceName={device.name} deviceNote={device.note} />)
         });
 
         deviceContext.offlineDevices.forEach((device) => {
@@ -34,7 +33,18 @@ export default function DevicesPage() {
 
         setOnlineDevices(onlineDevicesArr);
         setOfflineDevices(offlineDevicesArr);
+    };
 
+    useEffect(() => {
+        if (deviceContext.loading) {
+            return;
+        }
+
+        deviceContext.onlineDevices.forEach((deviceInfo) => {
+            myConnManager.addCallback(deviceInfo.device.id, deviceInfo.device.id + '_DevicesPage', rebuildPage);
+        });
+
+        rebuildPage();
     }, [deviceContext]);
 
     return (

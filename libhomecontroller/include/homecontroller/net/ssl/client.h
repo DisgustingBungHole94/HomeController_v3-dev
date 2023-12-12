@@ -29,7 +29,7 @@ namespace ssl {
 
             void disable_timeout();
 
-        private:
+        protected:
             unique_ptr<SSL_CTX> m_ssl_ctx;
 
             std::string m_host;
