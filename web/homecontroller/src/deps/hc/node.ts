@@ -365,7 +365,7 @@ class NodeConnectionManager {
         this.connected = false;
     }
 
-    public addCallback(deviceId: string, callbackId: string, callback: DeviceStateUpdateCallback): State | null {
+    public addCallback(deviceId: string, callbackId: string, callback: DeviceStateUpdateCallback, initialCall: boolean = true): State | null {
         const device = this.deviceList.get(deviceId);
         if (!device) {
             return null;
@@ -373,7 +373,9 @@ class NodeConnectionManager {
 
         device.onStateUpdateCallbacks.set(callbackId, callback);
 
-        callback(device.device, device.lastState);
+        if (initialCall) {
+            callback(device.device, device.lastState);
+        }
 
         return device.lastState;
     }
@@ -387,9 +389,8 @@ class NodeConnectionManager {
         device.onStateUpdateCallbacks.delete(callbackId);
     }
 
-    public useState(): DeviceList {
-        this.devicesState = useState<DeviceList>(emptyDeviceList());        
-        return this.devicesState[0];
+    public useState(devicesState: [DeviceList, Dispatch<SetStateAction<DeviceList>>]) {
+        this.devicesState = devicesState;
     }
 
     private updateState() {

@@ -3,9 +3,8 @@
 import { ErrorContext } from '@/app/home/contexts/error_context'
 import { DeviceContext } from '@/app/home/contexts/device_context'
 
-import { connectUser, ConnectUserResponse, Device } from '@/deps/hc/api_requests'
-import { myConnManager, DeviceList } from '@/deps/hc/node';
-import { State } from '@/deps/hc/state';
+import { connectUser, ConnectUserResponse } from '@/deps/hc/api_requests'
+import { myConnManager, DeviceList, emptyDeviceList } from '@/deps/hc/node';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -14,7 +13,9 @@ import Cookies from 'js-cookie';
 
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
     const [error, setError] = useState('');
-    const devices: DeviceList = myConnManager.useState();
+
+    const [devices, setDevices] = useState<DeviceList>(emptyDeviceList());
+    myConnManager.useState([devices, setDevices]);
 
     const router = useRouter();
 

@@ -41,7 +41,7 @@ export default function DevicesPage() {
         }
 
         deviceContext.onlineDevices.forEach((deviceInfo) => {
-            myConnManager.addCallback(deviceInfo.device.id, deviceInfo.device.id + '_DevicesPage', rebuildPage);
+            myConnManager.addCallback(deviceInfo.device.id, deviceInfo.device.id + '_DevicesPage', rebuildPage, false);
         });
 
         rebuildPage();

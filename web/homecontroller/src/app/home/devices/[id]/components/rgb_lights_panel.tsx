@@ -193,7 +193,7 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
 
     return (
         <div className="p-6" style={{
-            backgroundImage: 'linear-gradient(transparent, rgba(' + selectedColor.r + ', ' + selectedColor.g + ', ' + selectedColor.b + ', 0.3) 15%, transparent)'
+            backgroundImage: 'linear-gradient(transparent, rgba(' + selectedColor.r + ', ' + selectedColor.g + ', ' + selectedColor.b + ', 0.2) 15%, transparent)'
         }}>
             <div>
                 <h1 className="text-5xl">{deviceName}</h1>
