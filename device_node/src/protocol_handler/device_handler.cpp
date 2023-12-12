@@ -152,6 +152,11 @@ hc::api::client_packet device_handler::handle_authenticate(const state& state, c
         hc::api::validate_device_response res = state.m_api_request_maker->validate_device(ticket, state.m_secret);
 
         m_user_ptr = state.m_device_manager->get_user(res.get_user_id());
+        if (m_user_ptr->get_device(res.get_device_id()) != nullptr) {
+            hc::util::logger::dbg("device already connected! rejecting...");
+            return hc::api::client_packet(hc::api::client_packet::opcode::ERROR, { 0x04 }); // device already connected
+        }
+
         m_device_ptr = m_user_ptr->add_device(res.get_device_id(), shared_from_this());
         m_device_ptr->set_state(initial_state);
 

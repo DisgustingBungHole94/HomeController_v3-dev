@@ -28,10 +28,11 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
         setWindowWidth(window.innerWidth);
     })
 
+    // device info
     const [deviceName, setDeviceName] = useState('');
     const [deviceNote, setDeviceNote] = useState('');
 
-    // selected values from UI
+    // selected values for UI
     const [selectedColor, setSelectedColor] = useState<RGBColor>({r: 0, g: 0, b: 0});
     const [selectedProgram, setSelectedProgram] = useState('none');
  

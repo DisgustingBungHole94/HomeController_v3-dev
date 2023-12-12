@@ -2,11 +2,12 @@ The Todo List:
 
 Needs immediate attention:
 
+* Fix strange device_node behavior upon network change
+
 Listed in order of priority:
 
 1. homecontroller_api: Remove /login/device & /login/user in favor of unified login request
 2. homecontroller_api: Add /connect/device
-3. device_node: Cleanup device_handler and ws_handler, refactor similar to how packets are processed in node.tsx
 4. homecontroller_api: Setup mongo.db
 5. device_node: Investigate close function of server connection as potential cause of SIGPIPE issue
 6. homecontroler_api: Change connection->close so recv calls close() when necessary
