@@ -14,6 +14,8 @@ TARGET = $(BINARYDIR)/rgb_lights
 LIBS += -lpthread
 LIBS += -lssl
 LIBS += -lhomecontroller
+LIBS += -lrt
+LIBS += -lpigpio
 
 # programs
 _OBJECTS += programs/program.o

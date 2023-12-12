@@ -26,8 +26,8 @@ const authManager: AuthManager = new AuthManager();
 const userManager: UserManager = new UserManager();
 const ticketService: TicketService = new TicketService();
 
-const certFile: Buffer = fs.readFileSync('/home/josh/certs/fullchain.pem');
-const privKeyFile: Buffer = fs.readFileSync('/home/josh/certs/privkey.pem');
+const certFile: Buffer = fs.readFileSync('../../certs/fullchain.pem');
+const privKeyFile: Buffer = fs.readFileSync('../../certs/privkey.pem');
 
 const app: any = express();
 app.use(express.json());

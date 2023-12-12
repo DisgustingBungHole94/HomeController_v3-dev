@@ -15,7 +15,7 @@ bool rgb_lights::start() {
 
     hc::util::logger::log("RGBLights v0.0.0 by Josh Dittmer");
 
-    if (!PWM::init("pwm-test")) {
+    if (!PWM::init()) {
         hc::util::logger::csh("failed to start PWM!");
         return false;
     }

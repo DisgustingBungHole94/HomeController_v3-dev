@@ -69,7 +69,7 @@ namespace ssl {
         freeaddrinfo(addrs);
 
         if (sd == -1) {
-            throw exception("failed to connect to server", "hc::net::ssl::client::run");
+            throw exception("failed to connect to server (" + std::to_string(errno) + ")", "hc::net::ssl::client::run");
         }
 
         SSL_set_fd(ssl.get(), sd);

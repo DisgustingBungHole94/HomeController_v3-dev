@@ -2,71 +2,68 @@
 
 #include <homecontroller/util/logger.h>
 
+#include <pigpio.h>
+
 const unsigned int PWM::PWM_PIN_R = 27;
 const unsigned int PWM::PWM_PIN_G = 22;
 const unsigned int PWM::PWM_PIN_B = 23;
 
 bool PWM::_init = false;
-std::ofstream PWM::_file;
 
-std::mutex PWM::_mutex;
-
-bool PWM::init(const std::string& pwm_file) {
-    _file.open(pwm_file);
-    if (!_file.is_open()) {
+bool PWM::init() {
+#ifdef __arm__
+    if (gpioInitialise() < 0) {
         return false;
     }
 
-    _init = true;
+    static const int FREQUENCY = 100000;
+    static const int DUTY_CYCLE = 1000;
+
+    bool error = false;
+
+    // set PWM frequency
+    error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
+    error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
+    error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
+
+    // set PWM duty cycle
+    error = (gpioPWM(PWM_PIN_R, DUTY_CYCLE) != 0);
+    error = (gpioPWM(PWM_PIN_G, DUTY_CYCLE) != 0);
+    error = (gpioPWM(PWM_PIN_B, DUTY_CYCLE) != 0);
+
+    if (error) {
+        gpioTerminate();
+        return false;
+    }
+
     return true;
+#else
+    return true;
+#endif
 }
 
 void PWM::analog_write(unsigned int pin, float value) {
-    if (!_init) return;
-
-    std::lock_guard<std::mutex> lock(_mutex);
-
-    //_file << std::to_string(pin) << "=" << std::to_string(value) << "\n";
-    //_file.flush();
-
-    if (!_file.good()) {
-        hc::util::logger::err("failed to write to pin " + std::to_string(pin) + "!");
+    if (!_init) {
+        return;
     }
 }
 
 void PWM::reset() {
-    if (!_init) return;
-
-    std::lock_guard<std::mutex> lock(_mutex);
-
-    _file << "*=0" << "\n";
-    _file.flush();
-
-    if (!_file.good()) {
-        hc::util::logger::err("failed to reset pins!");
+    if (!_init) {
+        return;
     }
-}
 
-void PWM::release_pin(unsigned int pin) {
-    if (!_init) return;
+#ifdef __arm__
 
-    std::lock_guard<std::mutex> lock(_mutex);
-
-    _file << "release " << std::to_string(pin) << "\n";
-    _file.flush();
-
-    if (!_file.good()) {
-        hc::util::logger::err("failed to release pin " + std::to_string(pin) + "!");
-    }
+#endif
 }
 
 void PWM::stop() {
-    if (!_init) return;
-
-    std::lock_guard<std::mutex> lock(_mutex);
-
-    _file.close();
-    if (!_file.good()) {
-        hc::util::logger::err("failed to shutdown PWM!");
+    if (!_init) {
+        return;
     }
+
+#ifdef __arm__
+    gpioTerminate();
+#endif
 }
