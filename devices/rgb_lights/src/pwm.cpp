@@ -12,7 +12,7 @@ const unsigned int PWM::PWM_PIN_B = 23;
 bool PWM::_init = false;
 
 bool PWM::init() {
-#ifdef __arm__
+//#ifdef __arm__
     std::cout << "test!" << std::endl;
 
     if (gpioInitialise() < 0) {
@@ -23,6 +23,11 @@ bool PWM::init() {
     static const int DUTY_CYCLE = 255;
 
     bool error = false;
+
+    // set pins to output
+    error = (gpioSetMode(PWM_PIN_R, PI_OUTPUT) != 0); 
+    error = (gpioSetMode(PWM_PIN_G, PI_OUTPUT) != 0); 
+    error = (gpioSetMode(PWM_PIN_B, PI_OUTPUT) != 0); 
 
     // set PWM frequency
     error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
@@ -40,9 +45,9 @@ bool PWM::init() {
     }
 
     return true;
-#else
-    return true;
-#endif
+//#else
+    //return true;
+//#endif
 }
 
 void PWM::analog_write(unsigned int pin, float value) {
