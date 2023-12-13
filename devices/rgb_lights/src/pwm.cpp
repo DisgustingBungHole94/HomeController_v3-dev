@@ -3,6 +3,7 @@
 #include <homecontroller/util/logger.h>
 
 #include <pigpio.h>
+#include <iostream>
 
 const unsigned int PWM::PWM_PIN_R = 27;
 const unsigned int PWM::PWM_PIN_G = 22;
@@ -12,12 +13,14 @@ bool PWM::_init = false;
 
 bool PWM::init() {
 #ifdef __arm__
+    std::cout << "test!" << std::endl;
+
     if (gpioInitialise() < 0) {
         return false;
     }
 
     static const int FREQUENCY = 100000;
-    static const int DUTY_CYCLE = 1000;
+    static const int DUTY_CYCLE = 255;
 
     bool error = false;
 

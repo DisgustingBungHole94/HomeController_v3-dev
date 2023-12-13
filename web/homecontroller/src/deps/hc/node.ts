@@ -1,15 +1,10 @@
 import { ClientPacket, Opcode } from '@/deps/hc/client_packet';
 import { State } from '@/deps/hc/state';
-import { Exception } from '@/deps/hc/util/exception';
 import { Device, NodeTicket } from '@/deps/hc/api_requests'
 
-import { useState, Dispatch, SetStateAction } from 'react';
-
-
-//import { DeviceList, DeviceState, emptyDeviceList, updateDeviceList } from '@/app/home/contexts/device_context'
+import { Dispatch, SetStateAction } from 'react';
 
 type DeviceChangedCallback = (deviceInfo: DeviceInfo) => void;
-//type DeviceDisconnectCallback = (deviceInfo: DeviceInfo) => void;
 type DeviceStateUpdateCallback = (device: Device, state: State) => void;
 
 export interface DeviceList {
@@ -95,6 +90,8 @@ class NodeConnection {
                 if (!packet.parse(new Uint8Array(e.data))) {
                     return;
                 }
+
+                console.log(packet);
 
                 switch(packet.getOpcode()) {
                     case Opcode.AUTHENTICATE:
