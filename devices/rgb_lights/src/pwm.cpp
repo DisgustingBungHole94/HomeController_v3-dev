@@ -19,7 +19,7 @@ bool PWM::init() {
         return false;
     }
 
-    static const int FREQUENCY = 100000;
+    static const int FREQUENCY = 1000;
     static const int DUTY_CYCLE = 255;
 
     bool error = false;
@@ -30,14 +30,18 @@ bool PWM::init() {
     error = (gpioSetMode(PWM_PIN_B, PI_OUTPUT) != 0); 
 
     // set PWM frequency
-    error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
+   /*error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
     error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
     error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
 
     // set PWM duty cycle
     error = (gpioPWM(PWM_PIN_R, DUTY_CYCLE) != 0);
     error = (gpioPWM(PWM_PIN_G, DUTY_CYCLE) != 0);
-    error = (gpioPWM(PWM_PIN_B, DUTY_CYCLE) != 0);
+    error = (gpioPWM(PWM_PIN_B, DUTY_CYCLE) != 0);*/
+
+    error = (gpioWrite(PWM_PIN_R, 1) != 0);
+    error = (gpioWrite(PWM_PIN_G, 1) != 0);
+    error = (gpioWrite(PWM_PIN_B, 1) != 0);
 
     if (error) {
         gpioTerminate();
