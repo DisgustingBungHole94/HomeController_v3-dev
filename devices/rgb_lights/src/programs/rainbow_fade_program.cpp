@@ -32,7 +32,7 @@ void rainbow_fade_program::loop() {
             break;
     }
 
-    m_app->set_color_and_state(m_r, m_g, m_b, true);
+    m_app->set_color_and_state(m_r, m_g, m_b);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 }
