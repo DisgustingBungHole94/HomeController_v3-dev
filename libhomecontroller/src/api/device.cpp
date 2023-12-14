@@ -55,6 +55,9 @@ namespace api {
 
         m_running = true;
 
+        m_should_ping_server = true;
+        m_ping_server_thread = std::thread(&device::ping_server_loop, this);
+
         util::logger::log("device started, listening for requests");
 
         while(m_running) {
@@ -63,7 +66,7 @@ namespace api {
                 util::logger::log("disconnected from server");
                 return;
             }
-            
+
             client_packet req_packet;
 
             try {
@@ -121,6 +124,15 @@ namespace api {
         }
     }
 
+    void device::stop_ping_thread() {
+        hc::util::logger::log("stopping ping server thread...");
+
+        if (m_should_ping_server) {
+            m_should_ping_server = false;
+            m_ping_server_thread.join();
+        }
+    }
+
     void device::set_state(const state& state) {
         m_state = state;
         send_notify_packet();
@@ -137,6 +149,19 @@ namespace api {
        notify_packet.set_data(state_data);
 
        m_conn_ptr->send(notify_packet.serialize());
+    }
+
+    void device::ping_server_loop() {
+        while(m_should_ping_server) {
+            try {
+                m_conn_ptr->send({ 0x00 });
+            } catch(hc::exception& e) {
+                hc::util::logger::err("failed to ping server: " + std::string(e.what()));
+                return;
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+        }
     }
 
 }

@@ -99,11 +99,9 @@ namespace ssl {
         }
 
         int res = SSL_write(m_ssl.get(), data.c_str(), data.size());
-        std::cout << "res: " << res << std::endl;
 
         if (res <= 0) {
             int err = SSL_get_error(m_ssl.get(), res);
-            std::cout << "err: " << err << std::endl;
             
             switch(err) {
                 case SSL_ERROR_SYSCALL:

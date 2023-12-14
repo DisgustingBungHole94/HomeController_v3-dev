@@ -102,8 +102,6 @@ void ws_handler::send_notification_packet(const std::string& device_id, const st
 }
 
 void ws_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) {
-    hc::util::logger::dbg("received user message");
-
     m_ws_wrapper.use(conn_ptr);
     m_ws_wrapper.recv();
     m_ws_wrapper.unuse();
@@ -121,6 +119,8 @@ void ws_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr
         if (data.size() == 1 && data[0] == 0x00) {
             return;
         }
+
+        hc::util::logger::dbg("received user message");
 
         hc::api::client_packet packet;
         try {

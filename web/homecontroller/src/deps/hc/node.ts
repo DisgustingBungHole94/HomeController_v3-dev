@@ -152,6 +152,17 @@ class NodeConnection {
                     reject();
                 }
             }, 5000);
+
+            let pingIntId = setInterval(() => {
+                if (this.socket?.readyState !== WebSocket.OPEN) {
+                    clearInterval(pingIntId);
+                } else {
+                    let pingData: Uint8Array = new Uint8Array(1);
+                    pingData[0] = 0x00;
+
+                    this.socket?.send(pingData);
+                }
+            }, 3000);
         });
     }
 

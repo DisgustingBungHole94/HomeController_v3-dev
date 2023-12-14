@@ -41,18 +41,18 @@ bool rgb_lights::start() {
     try {
         api.connect();
 
-        m_device = api.login_device("test", "1234", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB");
+        m_device_ptr = api.login_device("test", "1234", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB");
 
-        m_device.set_turn_on_callback(std::bind(&rgb_lights::turn_on_callback, this));
-        m_device.set_turn_off_callback(std::bind(&rgb_lights::turn_off_callback, this));
-        m_device.set_data_callback(std::bind(&rgb_lights::data_callback, this, std::placeholders::_1));
+        m_device_ptr->set_turn_on_callback(std::bind(&rgb_lights::turn_on_callback, this));
+        m_device_ptr->set_turn_off_callback(std::bind(&rgb_lights::turn_off_callback, this));
+        m_device_ptr->set_data_callback(std::bind(&rgb_lights::data_callback, this, std::placeholders::_1));
     
         m_running = true;
 
-        m_device.run(hc::api::state::power::OFF, m_state.serialize());
+        m_device_ptr->run(hc::api::state::power::OFF, m_state.serialize());
     } catch(hc::exception& e) {
         hc::util::logger::err("device exception occurred: " + std::string(e.what()) + " (" + std::string(e.func()) + ")");
-        m_device.stop();
+        m_device_ptr->stop();
     }
 
     m_running = false;
@@ -68,9 +68,11 @@ bool rgb_lights::start() {
         api.disconnect();
     }
 
-    if (m_device.is_connected()) {
-        m_device.stop();
+    if (m_device_ptr->is_connected()) {
+        m_device_ptr->stop();
     }
+
+    m_device_ptr->stop_ping_thread();
 
     hc::util::logger::log("stopping PWM...");
     PWM::stop();
@@ -84,7 +86,7 @@ void rgb_lights::shutdown() {
         return;
     }
 
-    m_device.stop();
+    m_device_ptr->stop();
 }
 
 bool rgb_lights::set_color_and_state(uint8_t r, uint8_t g, uint8_t b, bool limit) {
@@ -109,11 +111,11 @@ bool rgb_lights::set_color_and_state(uint8_t r, uint8_t g, uint8_t b, bool limit
     m_state.set_g(g);
     m_state.set_b(b);
 
-    hc::api::state new_state = m_device.get_state();
+    hc::api::state new_state = m_device_ptr->get_state();
     new_state.set_data(m_state.serialize());
 
     try {
-        m_device.set_state(new_state);
+        m_device_ptr->set_state(new_state);
     } catch(hc::exception& e) {
         if (m_running) {
             hc::util::logger::err("failed to update device state: " + std::string(e.what()));
@@ -172,7 +174,7 @@ std::string rgb_lights::data_callback(std::string data) {
         res = set_color(new_state.get_r(), new_state.get_g(), new_state.get_b()) ? 0x00: 0x04; // 0x04: failed to set color
     }
 
-    hc::api::state device_state = m_device.get_state();
+    hc::api::state device_state = m_device_ptr->get_state();
     device_state.set_data(m_state.serialize());
 
     if (m_needs_power_on) {
@@ -181,7 +183,7 @@ std::string rgb_lights::data_callback(std::string data) {
     }
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_device.set_state(device_state);
+    m_device_ptr->set_state(device_state);
 
     return { static_cast<char>(res) };
 }
@@ -265,7 +267,7 @@ bool rgb_lights::start_program(hc::api::rgb_lights_state::program program_type) 
     m_program_thread = std::thread(&program::run, m_program_ptr.get());
     m_program_running = true;
 
-    if (m_device.get_state().get_power() == hc::api::state::power::OFF) {
+    if (m_device_ptr->get_state().get_power() == hc::api::state::power::OFF) {
         m_needs_power_on = true;
     }
 
@@ -301,7 +303,7 @@ bool rgb_lights::interrupt_program(const std::string& data) {
 }
 
 bool rgb_lights::set_color(uint8_t r, uint8_t g, uint8_t b) {
-    if (m_device.get_state().get_power() == hc::api::state::power::OFF) {
+    if (m_device_ptr->get_state().get_power() == hc::api::state::power::OFF) {
         m_needs_power_on = true;
     }
 

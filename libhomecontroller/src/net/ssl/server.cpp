@@ -129,7 +129,6 @@ namespace ssl {
                     }
 
                     else if (events[i].events & EPOLLERR) {
-                        std::cout << "ERROR!" << std::endl;
                         handle_close(mit->second);
                     }
 

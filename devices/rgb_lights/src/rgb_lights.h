@@ -34,7 +34,7 @@ class rgb_lights {
 
         bool set_color(uint8_t r, uint8_t g, uint8_t b);
 
-        hc::api::device m_device;
+        hc::api::device_ptr m_device_ptr;
         bool m_running;
 
         hc::api::rgb_lights_state m_state;

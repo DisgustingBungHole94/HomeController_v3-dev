@@ -55,9 +55,7 @@ void device_handler::send_and_forward_response(std::weak_ptr<ws_handler> user_ha
 
     m_user_queue.push(user_handler_ptr);
 
-    std::cout << "start device send" << std::endl;
     conn_ptr->send(data);
-    std::cout << "end device send" << std::endl;
 }
 
 void device_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) {

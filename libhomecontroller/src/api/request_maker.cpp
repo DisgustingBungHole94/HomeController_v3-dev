@@ -22,7 +22,7 @@ namespace api {
         }
     }
 
-    device request_maker::login_device(const std::string& username, const std::string& password, const std::string& device_id) {
+    std::unique_ptr<device> request_maker::login_device(const std::string& username, const std::string& password, const std::string& device_id) {
         if (!m_connected_to_api) {
             connect_to_api();
         }
@@ -38,7 +38,7 @@ namespace api {
         make_request(request, response);
 
         if (!response.get_success()) {
-            throw exception("login failed: " + response.get_error_msg(), "hc::api::request_maker::login");
+            throw exception("login failed: " + response.get_error_msg(), "hc::api::request_maker::login_device");
         }
 
         util::logger::dbg("login successful! connecting to node...");
@@ -55,19 +55,19 @@ namespace api {
 
         hc::http::response upgrade_response = make_http_request(upgrade_request);
         if (upgrade_response.get_status() != "Switching Protocols") {
-            throw exception("failed to upgrade connection", "hc::api::request_maker::upgrade_to_device");
+            throw exception("failed to upgrade connection", "hc::api::request_maker::login_device");
         }
 
         m_ssl_client.disable_timeout();
 
         util::logger::dbg("node connection successful!");
 
-        device device(m_ssl_client.get_conn(), response.get_device_id(), response.get_ticket());
+        std::unique_ptr<device> device_ptr = std::make_unique<device>(m_ssl_client.get_conn(), response.get_device_id(), response.get_ticket());
 
         m_ssl_client.reset_conn();
         m_connected_to_node = false;
 
-        return device;
+        return std::move(device_ptr);
     }
 
     validate_device_response request_maker::validate_device(const std::string& ticket, const std::string& node_secret) {

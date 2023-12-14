@@ -26,9 +26,9 @@ namespace api {
             void connect();
             void disconnect();
 
-            device login_device(const std::string& username, const std::string& password, const std::string& device_id);
+            std::unique_ptr<device> login_device(const std::string& username, const std::string& password, const std::string& device_id);
 
-            device upgrade_to_device(const std::string& device_id, const std::string& node_host, const std::string& node_port, const std::string& ticket);
+            //std::unique_ptr<device> upgrade_to_device(const std::string& device_id, const std::string& node_host, const std::string& node_port, const std::string& ticket);
 
             /*validate_node_connect_response validate_node_user(const std::string& client_token, const std::string& node_secret);
             validate_node_connect_response validate_node_device(const std::string& client_token, const std::string& node_secret, const std::string& device_id);*/
