@@ -30,9 +30,9 @@ bool PWM::init() {
     error = (gpioSetMode(PWM_PIN_B, PI_OUTPUT) != 0);*/
 
     // set PWM frequency
+    /*error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
     error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
-    error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
-    error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
+    error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);*/
 
     // set PWM duty cycle
     error = (gpioPWM(PWM_PIN_R, DUTY_CYCLE) != 0);
