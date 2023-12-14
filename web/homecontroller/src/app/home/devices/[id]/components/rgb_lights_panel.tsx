@@ -104,6 +104,10 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
     };
 
     useEffect(() => {
+        updateColorPreview(selectedColor);
+    }, [windowWidth]);
+
+    useEffect(() => {
         if (deviceContext.loading) {
             return;
         }
@@ -118,10 +122,6 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
         setDeviceName(deviceInfo.device.name);
         setDeviceNote(deviceInfo.device.note);
     }, [deviceContext]);
-
-    useEffect(() => {
-        updateColorPreview(selectedColor);
-    }, [windowWidth]);
 
     const togglePower = async () => {
         const packet = new ClientPacket();
