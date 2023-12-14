@@ -3,6 +3,7 @@
 #include "homecontroller/util/logger.h"
 #include "homecontroller/api/client_packet.h"
 #include "homecontroller/api/info.h"
+#include "homecontroller/exception.h"
 
 #include <iostream>
 
@@ -70,7 +71,13 @@ namespace api {
             }
 
             client_packet req_packet;
-            req_packet.parse(req_data);
+
+            try {
+                req_packet.parse(req_data);
+            } catch(hc::exception& e) {
+                util::logger::err("failed to parse packet: " + std::string(e.what()));
+                continue;
+            }
 
             if (req_packet.get_device_id() != m_device_id) {
                 util::logger::err("packet device id mismatch!");
