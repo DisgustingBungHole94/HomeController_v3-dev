@@ -9,12 +9,9 @@
 
 #include <unordered_map>
 #include <iostream>
+#include <csignal>
 
-bool rgb_lights::start() {
-    hc::util::logger::enable_debug();
-
-    hc::util::logger::log("RGBLights v0.0.0 by Josh Dittmer");
-
+bool rgb_lights::init_pwm() {
     if (!PWM::init()) {
         hc::util::logger::csh("failed to start PWM!");
         return false;
@@ -23,6 +20,14 @@ bool rgb_lights::start() {
     PWM::reset();
 
     hc::util::logger::log("PWM started");
+
+    return true;
+}
+
+bool rgb_lights::start() {
+    hc::util::logger::enable_debug();
+
+    hc::util::logger::log("RGBLights v0.0.0 by Josh Dittmer");
 
     m_state.set_r(0x00);
     m_state.set_g(0x00);

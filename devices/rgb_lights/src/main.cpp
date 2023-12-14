@@ -7,6 +7,11 @@
 rgb_lights app;
 
 int main() {
+    if (!app.init_pwm()) {
+        hc::util::logger::csh("exiting with non-zero status code");
+        return -1;
+    }
+
     std::signal(SIGINT, [](int s) {
         app.shutdown();
     });

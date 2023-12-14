@@ -16,6 +16,8 @@ class rgb_lights {
 
         ~rgb_lights() {}
 
+        bool init_pwm();
+
         bool start();
         void shutdown();
 
