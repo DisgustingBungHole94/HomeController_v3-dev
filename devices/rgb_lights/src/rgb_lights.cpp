@@ -92,9 +92,9 @@ void rgb_lights::shutdown() {
 bool rgb_lights::set_color_and_state(uint8_t r, uint8_t g, uint8_t b, bool limit) {
     std::lock_guard<std::mutex> lock(m_mutex);
     
-    PWM::analog_write(PWM::PWM_PIN_R, r / 255.0f);
-    PWM::analog_write(PWM::PWM_PIN_G, g / 255.0f);
-    PWM::analog_write(PWM::PWM_PIN_B, b / 255.0f);
+    PWM::analog_write(PWM::PWM_PIN_R, r);
+    PWM::analog_write(PWM::PWM_PIN_G, g);
+    PWM::analog_write(PWM::PWM_PIN_B, b);
     
     static const int SEND_THRESHOLD = 17;
 
@@ -307,9 +307,9 @@ bool rgb_lights::set_color(uint8_t r, uint8_t g, uint8_t b) {
         m_needs_power_on = true;
     }
 
-    PWM::analog_write(PWM::PWM_PIN_R, r / 255.0f);
-    PWM::analog_write(PWM::PWM_PIN_G, g / 255.0f);
-    PWM::analog_write(PWM::PWM_PIN_B, b / 255.0f);
+    PWM::analog_write(PWM::PWM_PIN_R, r);
+    PWM::analog_write(PWM::PWM_PIN_G, g);
+    PWM::analog_write(PWM::PWM_PIN_B, b);
     
     m_state.set_r(r);
     m_state.set_g(g);

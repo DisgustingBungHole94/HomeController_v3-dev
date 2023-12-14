@@ -30,18 +30,18 @@ bool PWM::init() {
     error = (gpioSetMode(PWM_PIN_B, PI_OUTPUT) != 0); 
 
     // set PWM frequency
-   /*error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
+    error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
     error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
     error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
 
     // set PWM duty cycle
     error = (gpioPWM(PWM_PIN_R, DUTY_CYCLE) != 0);
     error = (gpioPWM(PWM_PIN_G, DUTY_CYCLE) != 0);
-    error = (gpioPWM(PWM_PIN_B, DUTY_CYCLE) != 0);*/
+    error = (gpioPWM(PWM_PIN_B, DUTY_CYCLE) != 0);
 
-    error = (gpioWrite(PWM_PIN_R, 1) != 0);
+    /*error = (gpioWrite(PWM_PIN_R, 1) != 0);
     error = (gpioWrite(PWM_PIN_G, 1) != 0);
-    error = (gpioWrite(PWM_PIN_B, 1) != 0);
+    error = (gpioWrite(PWM_PIN_B, 1) != 0);*/
 
     if (error) {
         gpioTerminate();
@@ -54,10 +54,12 @@ bool PWM::init() {
 #endif*/
 }
 
-void PWM::analog_write(unsigned int pin, float value) {
+void PWM::analog_write(unsigned int pin, uint8_t value) {
     if (!_init) {
         return;
     }
+
+    gpioPWM(pin, value);
 }
 
 void PWM::reset() {
@@ -65,9 +67,9 @@ void PWM::reset() {
         return;
     }
 
-#ifdef __arm__
-
-#endif
+    gpioPWM(PWM_PIN_R, 0);
+    gpioPWM(PWM_PIN_G, 0);
+    gpioPWM(PWM_PIN_B, 0);
 }
 
 void PWM::stop() {
@@ -75,7 +77,5 @@ void PWM::stop() {
         return;
     }
 
-#ifdef __arm__
     gpioTerminate();
-#endif
 }

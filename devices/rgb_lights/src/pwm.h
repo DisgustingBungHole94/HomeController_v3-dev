@@ -9,7 +9,7 @@ class PWM {
     public:
         static bool init();
 
-        static void analog_write(unsigned int pin, float value);
+        static void analog_write(unsigned int pin, uint8_t value);
 
         static void reset();
 
