@@ -30,4 +30,6 @@ void protocol_handler::stop_checking_connection() {
 }
 
 
-bool protocol_handler::check_connection() {}
+bool protocol_handler::check_connection() {
+    return false;
+}
