@@ -34,11 +34,11 @@ void device_handler::on_destroyed(const state& state) {
         hc::util::logger::err("failed to disconnect device: " + std::string(e.what()));
     }
 
-    if (m_should_check_connection) {
+    /*if (m_should_check_connection) {
         hc::util::logger::dbg("stopping check connection thread...");
         m_should_check_connection = false;
         m_check_connection_thread.join();
-    }
+    }*/
 }
 
 void device_handler::send_and_forward_response(std::weak_ptr<ws_handler> user_handler_ptr, const std::string& data) {
@@ -67,9 +67,8 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
         return;
     }
 
-    // device is pinged regularly to check connection
+    // device pings regularly to prevent timeout
     if (data.size() == 1 && data[0] == 0x00) {
-        m_connection_good = true;
         return;
     }
 
@@ -192,9 +191,9 @@ hc::api::client_packet device_handler::handle_authenticate(const state& state, c
 
     m_authenticated = true;
 
-    hc::util::logger::dbg("starting check connection thread...");
+    /*hc::util::logger::dbg("starting check connection thread...");
     m_should_check_connection = true;
-    m_check_connection_thread = std::thread(&device_handler::check_connection, this);
+    m_check_connection_thread = std::thread(&device_handler::check_connection, this);*/
 
     return hc::api::client_packet(hc::api::client_packet::opcode::AUTHENTICATE, { 0x00 });
 }
@@ -241,7 +240,7 @@ void device_handler::handle_response(const state& state, const hc::net::ssl::ser
     m_user_queue.pop();
 }
 
-void device_handler::check_connection() {
+/*void device_handler::check_connection() {
     while(m_should_check_connection) {
         hc::net::ssl::server_conn_ptr conn_ptr;
         if (!(conn_ptr = m_conn_hdl.lock())) {
@@ -261,4 +260,4 @@ void device_handler::check_connection() {
 
         hc::util::logger::dbg("device connection good!");
     }
-}
+}*/

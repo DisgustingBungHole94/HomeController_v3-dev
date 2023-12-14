@@ -134,7 +134,7 @@ void device_node::on_data(hc::net::ssl::server_conn_hdl conn_hdl) {
     }
     
     if (!handler->get_destroyed() && handler->should_upgrade_protocol()) {
-        m_state.m_server->toggle_timeout(conn_ptr);
+        //m_state.m_server->toggle_timeout(conn_ptr);
         mit->second = handler->get_new_protocol();
     }
 }

@@ -63,13 +63,7 @@ namespace api {
                 util::logger::log("disconnected from server");
                 return;
             }
-
-            // device is pinged regularly to check connection
-            if (req_data.size() == 1 && req_data[0] == 0x00) {
-                m_conn_ptr->send({ 0x00 });
-                continue;
-            }
-
+            
             client_packet req_packet;
 
             try {
