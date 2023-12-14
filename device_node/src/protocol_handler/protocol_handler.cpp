@@ -22,6 +22,7 @@ void protocol_handler::start_checking_connection() {
     hc::util::logger::log("starting check connection loop for client handler");
 
     m_check_connection_thread = std::thread([this]() -> void {
+        this->m_should_check_connection = true;
         while(this->m_should_check_connection) {
             check_connection();
         }
