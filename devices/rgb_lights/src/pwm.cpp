@@ -12,7 +12,7 @@ const unsigned int PWM::PWM_PIN_B = 23;
 bool PWM::_init = false;
 
 bool PWM::init() {
-//#ifdef __arm__
+#ifdef __arm__
     std::cout << "test!" << std::endl;
 
     if (gpioInitialise() < 0) {
@@ -49,9 +49,9 @@ bool PWM::init() {
     }
 
     return true;
-//#else
-    //return true;
-//#endif
+#else
+    return true;
+#endif
 }
 
 void PWM::analog_write(unsigned int pin, float value) {

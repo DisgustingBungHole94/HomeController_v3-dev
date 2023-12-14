@@ -94,7 +94,7 @@ bool rgb_lights::set_color_and_state(uint8_t r, uint8_t g, uint8_t b, bool limit
     PWM::analog_write(PWM::PWM_PIN_G, g / 255.0f);
     PWM::analog_write(PWM::PWM_PIN_B, b / 255.0f);
     
-    static const int SEND_THRESHOLD = 10;
+    static const int SEND_THRESHOLD = 17;
 
     if (limit) {
         if (m_num_sends_limited < SEND_THRESHOLD) {

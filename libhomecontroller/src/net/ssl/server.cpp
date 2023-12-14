@@ -10,6 +10,7 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 #include <set>
+#include <iostream>
 
 namespace hc {
 namespace net {
@@ -125,6 +126,11 @@ namespace ssl {
                         else if (events[i].data.fd == mit->second->m_timer_fd) {
                             handle_timeout(mit->second);
                         }
+                    }
+
+                    else if (events[i].events & EPOLLERR) {
+                        std::cout << "ERROR!" << std::endl;
+                        handle_close(mit->second);
                     }
 
                 }
