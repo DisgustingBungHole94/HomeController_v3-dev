@@ -25,9 +25,9 @@ bool PWM::init() {
     bool error = false;
 
     // set pins to output
-    error = (gpioSetMode(PWM_PIN_R, PI_OUTPUT) != 0); 
+    /*error = (gpioSetMode(PWM_PIN_R, PI_OUTPUT) != 0); 
     error = (gpioSetMode(PWM_PIN_G, PI_OUTPUT) != 0); 
-    error = (gpioSetMode(PWM_PIN_B, PI_OUTPUT) != 0); 
+    error = (gpioSetMode(PWM_PIN_B, PI_OUTPUT) != 0);*/
 
     // set PWM frequency
     error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);
