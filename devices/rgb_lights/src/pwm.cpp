@@ -35,9 +35,9 @@ bool PWM::init() {
     error = (gpioSetPWMfrequency(PWM_PIN_R, FREQUENCY) != 0);*/
 
     // set PWM duty cycle
-    error = (gpioPWM(PWM_PIN_R, DUTY_CYCLE) != 0);
-    error = (gpioPWM(PWM_PIN_G, DUTY_CYCLE) != 0);
-    error = (gpioPWM(PWM_PIN_B, DUTY_CYCLE) != 0);
+    error = (gpioPWM(PWM_PIN_R, 0) != 0);
+    error = (gpioPWM(PWM_PIN_G, 0) != 0);
+    error = (gpioPWM(PWM_PIN_B, 0) != 0);
 
     /*error = (gpioWrite(PWM_PIN_R, 1) != 0);
     error = (gpioWrite(PWM_PIN_G, 1) != 0);
