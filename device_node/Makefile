@@ -4,7 +4,7 @@ STRUCTURE = $(shell cd $(SRCDIR) && find . -type d)
 DEPSDIR = thirdparty
 
 CXX ?= g++
-CXXFLAGS ?= -g $(INCLUDES)
+CXXFLAGS ?= -g -std=c++17 $(INCLUDES)
 
 BINARYDIR = bin
 OBJECTDIR = $(BINARYDIR)/obj
