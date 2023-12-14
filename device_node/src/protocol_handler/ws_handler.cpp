@@ -104,16 +104,18 @@ void ws_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr
 
     if (m_ws_wrapper.is_closed()) {
         hc::util::logger::dbg("user connection closed!");
-        return;
-    }
-
-    if (m_ws_wrapper.is_closed()) {
         state.m_server->close_connection(conn_ptr);
         return;
     }
 
     for (std::size_t i = 0; i < m_ws_wrapper.get_message_log().size(); i++) {
         std::string data = m_ws_wrapper.get_message_log()[i];
+
+        // user is pinged regularly to check connection
+        if (data.size() == 1 && data[0] == 0x00) {
+            m_connection_good = true;
+            return;
+        }
 
         hc::api::client_packet packet;
         try {
@@ -217,5 +219,29 @@ bool ws_handler::send_to_device(const std::string& device_id, const std::string&
         hc::util::logger::dbg("failed to forward message to device: " + std::string(e.what()));
     }
 
+    return true;
+}
+
+bool ws_handler::check_connection() {
+    hc::net::ssl::server_conn_ptr conn_ptr;
+    if (!(conn_ptr = m_conn_hdl.lock())) {
+        hc::util::logger::err("failed to send test packet, bad connection ptr");
+        return false;
+    }
+
+    m_connection_good = false;
+
+    conn_ptr->send({ 0x00 });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+
+    if (!m_connection_good) {
+        hc::util::logger::err("connection check failed! user did not respond");
+        conn_ptr->close();
+        return false;
+    }
+
+    hc::util::logger::dbg("user connection good!");
+    
     return true;
 }

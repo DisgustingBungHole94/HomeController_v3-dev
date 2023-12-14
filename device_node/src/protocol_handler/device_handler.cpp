@@ -61,6 +61,12 @@ void device_handler::on_data(const state& state, const hc::net::ssl::server_conn
         return;
     }
 
+    // device is pinged regularly to check connection
+    if (data.size() == 1 && data[0] == 0x00) {
+        m_connection_good = true;
+        return;
+    }
+
     hc::util::logger::dbg("received device message");
     
     hc::api::client_packet packet;
@@ -223,4 +229,28 @@ void device_handler::handle_response(const state& state, const hc::net::ssl::ser
     }
 
     m_user_queue.pop();
+}
+
+bool device_handler::check_connection() {
+    hc::net::ssl::server_conn_ptr conn_ptr;
+    if (!(conn_ptr = m_conn_hdl.lock())) {
+        hc::util::logger::err("failed to send test packet, bad connection ptr");
+        return false;
+    }
+
+    m_connection_good = false;
+
+    conn_ptr->send({ 0x00 });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+
+    if (!m_connection_good) {
+        hc::util::logger::err("connection check failed! device did not respond");
+        conn_ptr->close();
+        return false;
+    }
+
+    hc::util::logger::dbg("device connection good!");
+    
+    return true;
 }

@@ -125,7 +125,7 @@ namespace ssl {
     }
 
     void connection::close() {
-        //std::lock_guard<std::mutex> lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
 
         if (!m_closed) {
             m_closed = true;

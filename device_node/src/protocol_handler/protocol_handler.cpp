@@ -15,3 +15,19 @@ void protocol_handler::execute(const state& state, const hc::net::ssl::server_co
 void protocol_handler::on_destroyed(const state& state) {}
 
 void protocol_handler::on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr) {}
+
+void protocol_handler::start_checking_connection() {
+    m_check_connection_thread = std::thread([this]() -> void {
+        while(this->m_should_check_connection) {
+            check_connection();
+        }
+    });
+}
+
+void protocol_handler::stop_checking_connection() {
+    m_should_check_connection = false;
+    m_check_connection_thread.join();
+}
+
+
+bool protocol_handler::check_connection() {}

@@ -5,6 +5,7 @@
 #include <homecontroller/net/ssl/server_connection.h>
 
 #include <mutex>
+#include <thread>
 
 class protocol_handler {
     public:
@@ -18,6 +19,9 @@ class protocol_handler {
 
         virtual void on_destroyed(const state& state);
 
+        void start_checking_connection();
+        void stop_checking_connection();
+
         void set_destroyed(bool destroyed) { m_destroyed = destroyed; }
         bool get_destroyed() { return m_destroyed; }
 
@@ -26,6 +30,11 @@ class protocol_handler {
 
     protected:
         virtual void on_data(const state& state, const hc::net::ssl::server_conn_ptr& conn_ptr);
+
+        virtual bool check_connection();
+
+        bool m_should_check_connection;
+        std::thread m_check_connection_thread;
 
         bool m_destroyed;
 

@@ -86,12 +86,20 @@ class NodeConnection {
                     return;
                 }
 
-                const packet = new ClientPacket();
-                if (!packet.parse(new Uint8Array(e.data))) {
-                    return;
+                const data: Uint8Array = new Uint8Array(e.data);
+                
+                // user is pinged regularly to check connection
+                if (data.length === 1 && data[0] === 0x00) {
+                    let pong = new Uint8Array(1);
+                    pong[0] = 0x00;
+
+                    this.socket?.send(pong);
                 }
 
-                console.log(packet);
+                const packet = new ClientPacket();
+                if (!packet.parse(data)) {
+                    return;
+                }
 
                 switch(packet.getOpcode()) {
                     case Opcode.AUTHENTICATE:

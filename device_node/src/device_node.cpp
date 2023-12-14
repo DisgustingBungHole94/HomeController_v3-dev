@@ -177,31 +177,3 @@ void device_node::loop() {
     // stop ssl server
     m_state.m_server->stop();
 }
-
-/*void device_node::client_job(hc::net::ssl::server_conn_ptr conn_ptr, std::string data) {
-    auto mit = m_conns.find(conn_ptr);
-    if (mit == m_conns.end()) {
-        hc::util::logger::dbg("connection has no associated handler, it was likely destroyed by another thread");
-        return;
-    }
-
-    std::shared_ptr<protocol_handler> handler = mit->second;
-
-    try {
-        handler->execute(m_state, conn_ptr);
-    } catch(hc::exception& e) {
-        if (handler->get_destroyed()) {
-            hc::util::logger::dbg("handler destroyed, likely cause of this exception");
-            hc::util::logger::dbg("exception info: " + std::string(e.what()) + " (" + std::string(e.func()) + ")");
-        } else {
-            hc::util::logger::err("exception occurred: " + std::string(e.what()) + " (" + std::string(e.func()) + ")");
-        }
-
-        return;
-    }
-    
-    if (!handler->get_destroyed() && handler->should_upgrade_protocol()) {
-        m_state.m_server->toggle_timeout(conn_ptr);
-        mit->second = handler->get_new_protocol();
-    }
-}*/
