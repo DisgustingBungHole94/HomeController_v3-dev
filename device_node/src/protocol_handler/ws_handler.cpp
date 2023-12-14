@@ -26,6 +26,12 @@ void ws_handler::on_destroyed(const state& state) {
     } catch(hc::exception& e) {
         hc::util::logger::err("failed to disconnect user: " + std::string(e.what()));
     }
+
+    if (m_should_check_connection) {
+        hc::util::logger::dbg("stopping check connection thread...");
+        m_should_check_connection = false;
+        m_check_connection_thread.join();
+    }
 }
 
 void ws_handler::send_response(const std::string& data) {
@@ -198,9 +204,14 @@ hc::api::client_packet ws_handler::handle_authenticate(const state& state, hc::n
         send_connect_packet(conn_ptr, x.first, x.second->get_state().serialize());
     }
 
+    hc::util::logger::dbg("user authenticated!");
+
     m_authenticated = true;
 
-    hc::util::logger::dbg("user authenticated!");
+
+    hc::util::logger::dbg("starting check connection thread...");
+    m_should_check_connection = true;
+    m_check_connection_thread = std::thread(&ws_handler::check_connection, this);
 
     return hc::api::client_packet(hc::api::client_packet::opcode::AUTHENTICATE, { 0x00 });
 }
@@ -222,26 +233,24 @@ bool ws_handler::send_to_device(const std::string& device_id, const std::string&
     return true;
 }
 
-bool ws_handler::check_connection() {
-    hc::net::ssl::server_conn_ptr conn_ptr;
-    if (!(conn_ptr = m_conn_hdl.lock())) {
-        hc::util::logger::err("failed to send test packet, bad connection ptr");
-        return false;
+void ws_handler::check_connection() {
+    while(m_should_check_connection) {
+        hc::net::ssl::server_conn_ptr conn_ptr;
+        if (!(conn_ptr = m_conn_hdl.lock())) {
+            hc::util::logger::err("failed to send test packet, bad connection ptr");
+        }
+
+        m_connection_good = false;
+
+        conn_ptr->send({ 0x00 });
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+
+        if (!m_connection_good) {
+            hc::util::logger::err("connection check failed! device did not respond");
+            conn_ptr->close();
+        }
+
+        hc::util::logger::dbg("user connection good!");
     }
-
-    m_connection_good = false;
-
-    conn_ptr->send({ 0x00 });
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-
-    if (!m_connection_good) {
-        hc::util::logger::err("connection check failed! user did not respond");
-        conn_ptr->close();
-        return false;
-    }
-
-    hc::util::logger::dbg("user connection good!");
-    
-    return true;
 }

@@ -136,7 +136,6 @@ void device_node::on_data(hc::net::ssl::server_conn_hdl conn_hdl) {
     if (!handler->get_destroyed() && handler->should_upgrade_protocol()) {
         m_state.m_server->toggle_timeout(conn_ptr);
         mit->second = handler->get_new_protocol();
-        mit->second->start_checking_connection();
     }
 }
 
@@ -159,7 +158,6 @@ void device_node::on_disconnect(hc::net::ssl::server_conn_hdl conn_hdl) {\
 
     mit->second->set_destroyed(true);
     mit->second->on_destroyed(m_state);
-    mit->second->stop_checking_connection();
 
     m_conns.erase(mit);
 
