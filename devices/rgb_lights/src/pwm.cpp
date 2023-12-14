@@ -59,6 +59,8 @@ void PWM::analog_write(unsigned int pin, uint8_t value) {
         return;
     }
 
+    std::cout << value << std::endl;
+
     gpioPWM(pin, value);
 }
 
