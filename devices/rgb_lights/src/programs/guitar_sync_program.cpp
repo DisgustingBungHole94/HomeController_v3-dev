@@ -143,13 +143,8 @@ void guitar_sync_program::loop() {
 
     avg /= BUFFER_SIZE / 2 - 1;
 
-    if (m_samples_since_update > 200) {
-        m_samples_since_update = 0;
+    if (avg < m_base_dbs) {
         m_base_dbs = avg;
-    } else {
-        if (avg < m_base_dbs) {
-            m_base_dbs = avg;
-        }
     }
 
     if (avg - m_base_dbs < 7.0f) {
