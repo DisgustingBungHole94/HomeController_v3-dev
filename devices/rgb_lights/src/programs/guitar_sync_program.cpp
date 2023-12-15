@@ -111,7 +111,7 @@ void guitar_sync_program::loop() {
 
     std::cout << "1" << std::endl;
     for (int i = 0; i < NUM_CHANNELS; i++) {
-        for (int j = 0; j < NUM_FRAMES / sizeof(buffer[0] / NUM_CHANNELS); i++) {
+        for (int j = 0; j < NUM_FRAMES / sizeof(buffer[0]) / NUM_CHANNELS; j++) {
             m_channels[i].m_in[j] = buffer[j * NUM_CHANNELS * i];
         }
 
