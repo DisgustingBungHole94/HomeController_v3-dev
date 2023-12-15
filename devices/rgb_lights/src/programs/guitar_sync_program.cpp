@@ -141,6 +141,8 @@ void guitar_sync_program::loop() {
         avg += m_channels[1].m_db[j];
     }
 
+    avg /= BUFFER_SIZE / 2 -1;
+
     std::cout << avg << std::endl;
 
     avg = std::max(avg, 25.0f);
