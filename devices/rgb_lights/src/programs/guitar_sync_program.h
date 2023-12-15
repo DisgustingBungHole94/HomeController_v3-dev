@@ -11,7 +11,7 @@ class rgb_lights;
 class guitar_sync_program : public program {
     public:
         guitar_sync_program() 
-            : m_init(false), m_base_dbs(0.0f), m_average(0.0f)
+            : m_init(false), m_base_dbs(0.0f), m_average(0.0f), m_first_run(true)
         {}
 
         ~guitar_sync_program() {}
@@ -45,4 +45,6 @@ class guitar_sync_program : public program {
 
         std::vector<float> m_samples;
         float m_average;
+
+        bool m_first_run;
 };

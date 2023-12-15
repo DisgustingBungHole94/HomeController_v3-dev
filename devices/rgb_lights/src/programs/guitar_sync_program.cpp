@@ -153,9 +153,12 @@ void guitar_sync_program::loop() {
         }
         m_average /= m_samples.size();
         m_samples.resize(0);
+    } else if (m_first_run) {
+        return;
     }
 
     if (m_average < m_base_dbs) {
+        if (m_first_run) m_first_run = false;
         m_base_dbs = m_average;
     }
 
