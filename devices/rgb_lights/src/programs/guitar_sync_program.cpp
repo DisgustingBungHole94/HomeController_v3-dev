@@ -57,6 +57,16 @@ void guitar_sync_program::on_start() {
         return;
     }
 
+    if ((res = snd_pcm_hw_params_set_periods(m_capture_handle, hw_params, 2, 0)) < 0) {
+        hc::util::logger::err("guitar sync: failed to set period count");
+        return;
+    }
+
+    if ((res = snd_pcm_hw_params_set_buffer_size(m_capture_handle, hw_params, (8192 * 2) >> 2)) < 0) {
+        hc::util::logger::err("guitar sync: failed to set buffer size");
+        return
+    }
+
     if ((res = snd_pcm_hw_params(m_capture_handle, hw_params)) < 0) {
         hc::util::logger::err("guitar sync: failed to set hardware params");
         return;
@@ -128,7 +138,7 @@ void guitar_sync_program::loop() {
     for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
         avg += m_channels[1].m_db[j];
     }
-    avg /= BUFFER_SIZE / 2 + 1;
+    avg /= BUFFER_SIZE / 2 - 1;
 
     std::cout << avg << std::endl;
 }
