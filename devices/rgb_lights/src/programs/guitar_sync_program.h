@@ -10,7 +10,7 @@ class rgb_lights;
 class guitar_sync_program : public program {
     public:
         guitar_sync_program() 
-            : m_init(false)    
+            : m_init(false), m_base_dbs(0.0f), m_samples_since_update(0)
         {}
 
         ~guitar_sync_program() {}
@@ -39,4 +39,7 @@ class guitar_sync_program : public program {
 
         snd_pcm_t* m_capture_handle;
         std::size_t m_format_width;
+
+        float m_base_dbs;
+        int m_samples_since_update;
 };

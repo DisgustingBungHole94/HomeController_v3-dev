@@ -142,21 +142,22 @@ void guitar_sync_program::loop() {
     }
 
     avg /= BUFFER_SIZE / 2 - 1;
-    avg -= 10.0f;
 
-    avg = std::max(avg, 0.0f);
-    avg = std::min(avg, 30.0f);
+    if (m_samples_since_update > 200) {
+        m_samples_since_update = 0;
+        m_base_dbs = avg;
+    } else {
+        if (avg < m_base_dbs) {
+            m_base_dbs = avg;
+        }
+    }
 
-    avg = (avg / 30.0f * 255.0f);
-
-    static const int MULTIPLE = 5;
-
-    uint8_t rounded = avg + MULTIPLE / 2.0f;
-    rounded -= rounded % MULTIPLE;
-
-    std::cout << rounded << std::endl;
-
-    m_app->set_color_and_state(avg, avg, avg);
+    if (avg - m_base_dbs < 7.0f) {
+        m_app->set_color_and_state(0, 0, 0);
+    } else {
+        uint8_t color_value = avg / (m_base_dbs + 15.0f) * 255.0f;
+         m_app->set_color_and_state(color_value, color_value, color_value);
+    }
 }
 
 void guitar_sync_program::on_interrupt() {}
