@@ -95,7 +95,7 @@ void guitar_sync_program::on_start() {
 }
 
 void guitar_sync_program::loop() {
-    std::cout << (bool)m_init << std::endl;
+    //std::cout << (bool)m_init << std::endl;
 
     if (!m_init) {
         return;
