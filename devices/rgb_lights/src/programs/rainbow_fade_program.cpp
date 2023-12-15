@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+void rainbow_fade_program::on_start() {}
+
 void rainbow_fade_program::loop() {
     switch(m_color_status) {
         case color_status::RED:

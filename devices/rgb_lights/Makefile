@@ -16,8 +16,12 @@ LIBS += -lssl
 LIBS += -lhomecontroller
 LIBS += -lrt
 LIBS += -lpigpio
+LIBS += -lasound
 
 # programs
+_OBJECTS += programs/guitar_sync_program.o
+_HEADERS += programs/guitar_sync_program.h
+
 _OBJECTS += programs/program.o
 _HEADERS += programs/program.h
 

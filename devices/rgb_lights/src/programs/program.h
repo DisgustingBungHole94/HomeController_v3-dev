@@ -16,6 +16,7 @@ class program {
         void unpause();
         void stop();
 
+        virtual void on_start();
         virtual void loop();
         virtual void on_interrupt();
         virtual void on_stop();

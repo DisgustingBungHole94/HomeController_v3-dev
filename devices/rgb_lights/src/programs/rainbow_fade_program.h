@@ -12,6 +12,7 @@ class rainbow_fade_program : public program {
 
         ~rainbow_fade_program() {}
 
+        void on_start() override;
         void loop() override;
         void on_interrupt() override;
         void on_stop() override;

@@ -1,6 +1,7 @@
 #include "rgb_lights.h"
 
 #include "programs/rainbow_fade_program.h"
+#include "programs/guitar_sync_program.h"
 #include "pwm.h"
 
 #include <homecontroller/api/request_maker.h>
@@ -242,7 +243,8 @@ void rgb_lights::perform_fade(uint8_t target_r, uint8_t target_g, uint8_t target
 
 bool rgb_lights::start_program(hc::api::rgb_lights_state::program program_type) {
     static const std::unordered_map<hc::api::rgb_lights_state::program, std::function<program*()>> programs = {
-        { hc::api::rgb_lights_state::program::RAINBOW_FADE, []() { return new rainbow_fade_program(); }}
+        { hc::api::rgb_lights_state::program::RAINBOW_FADE, []() { return new rainbow_fade_program(); }},
+        { hc::api::rgb_lights_state::program::GUITAR_SYNC, []() { return new guitar_sync_program(); }}
     };
     
     auto mit = programs.find(program_type);

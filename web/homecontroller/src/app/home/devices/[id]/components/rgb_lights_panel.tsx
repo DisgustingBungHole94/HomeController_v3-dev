@@ -67,6 +67,9 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
             case Program.RAINBOW_FADE:
                 setSelectedProgram('rainbow_fade');
                 break;
+            case Program.GUITAR_SYNC:
+                setSelectedProgram('guitar_sync');
+                break;
         }
 
         updateColorPreview(color);
@@ -187,6 +190,9 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
             case 'rainbow_fade':
                 startProgram(Program.RAINBOW_FADE);
                 break;
+            case 'guitar_sync':
+                startProgram(Program.GUITAR_SYNC);
+                break;
             default:
                 break;
         };
@@ -232,6 +238,7 @@ export default function RGBLightsPanel({ deviceId, nodeId }: RGBLightsPanelProps
                     >
                         <option value="none">None</option>
                         <option value="rainbow_fade">Rainbow Fade</option>
+                        <option value="guitar_sync">Guitar Sync</option>
                     </select>
                 </div>
             </div>
