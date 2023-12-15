@@ -134,13 +134,20 @@ void guitar_sync_program::loop() {
         }
     }
 
-    float avg = 0.0f;
+    /*float avg = 0.0f;
     for (int j = 0; j < BUFFER_SIZE / 2 - 1; j++) {
         avg += m_channels[1].m_db[j];
     }
-    avg /= BUFFER_SIZE / 2 - 1;
+    avg /= BUFFER_SIZE / 2 - 1;*/
 
-    std::cout << avg << std::endl;
+    std::cout << "***" << std::endl;
+    std::cout << m_channels[1].m_db[0] << std::endl;
+    std::cout << m_channels[1].m_db[10] << std::endl;
+    std::cout << m_channels[1].m_db[20] << std::endl;
+    std::cout << m_channels[1].m_db[30] << std::endl;
+    std::cout << m_channels[1].m_db[40] << std::endl;
+    std::cout << m_channels[1].m_db[50] << std::endl;
+    std::cout << "***" << std::endl;
 }
 
 void guitar_sync_program::on_interrupt() {}
