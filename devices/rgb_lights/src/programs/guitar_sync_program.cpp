@@ -1,5 +1,7 @@
 #include "guitar_sync_program.h"
 
+#include "../rgb_lights.h"
+
 #include <homecontroller/util/logger.h>
 
 #include <vector>
@@ -134,20 +136,24 @@ void guitar_sync_program::loop() {
         }
     }
 
-    /*float avg = 0.0f;
+    float avg = 0.0f;
     for (int j = 0; j < BUFFER_SIZE / 2 - 1; j++) {
         avg += m_channels[1].m_db[j];
     }
-    avg /= BUFFER_SIZE / 2 - 1;*/
 
-    std::cout << "***" << std::endl;
-    std::cout << m_channels[0].m_db[0] << std::endl;
+    avg = std::max(avg, 25.0f);
+    avg = (avg / 25.0f * 255.0f);
+
+    m_app->set_color_and_state(avg, avg, avg);
+
+    /*std::cout << "***" << std::endl;
+    std::cout << m_channels[1].m_db[0] << std::endl;
     std::cout << m_channels[0].m_db[10] << std::endl;
     std::cout << m_channels[0].m_db[20] << std::endl;
     std::cout << m_channels[0].m_db[30] << std::endl;
     std::cout << m_channels[0].m_db[40] << std::endl;
     std::cout << m_channels[0].m_db[50] << std::endl;
-    std::cout << "***" << std::endl;
+    std::cout << "***" << std::endl;*/
 }
 
 void guitar_sync_program::on_interrupt() {}
