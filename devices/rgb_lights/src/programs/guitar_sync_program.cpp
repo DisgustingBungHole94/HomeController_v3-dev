@@ -135,7 +135,7 @@ void guitar_sync_program::loop() {
     }
 
     float avg = 0.0f;
-    for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
+    for (int j = 0; j < BUFFER_SIZE / 2 - 1; j++) {
         avg += m_channels[1].m_db[j];
     }
     avg /= BUFFER_SIZE / 2 - 1;
