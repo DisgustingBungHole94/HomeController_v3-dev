@@ -142,23 +142,16 @@ void guitar_sync_program::loop() {
     }
 
     avg /= BUFFER_SIZE / 2 - 1;
-    avg -= 15.0f;
+    avg -= 10.0f;
 
     avg = std::max(avg, 0.0f);
     avg = std::min(avg, 20.0f);
 
     avg = (avg / 20.0f * 255.0f);
 
-    m_app->set_color_and_state(avg, avg, avg);
+    std::cout << avg << std::endl;
 
-    /*std::cout << "***" << std::endl;
-    std::cout << m_channels[1].m_db[0] << std::endl;
-    std::cout << m_channels[0].m_db[10] << std::endl;
-    std::cout << m_channels[0].m_db[20] << std::endl;
-    std::cout << m_channels[0].m_db[30] << std::endl;
-    std::cout << m_channels[0].m_db[40] << std::endl;
-    std::cout << m_channels[0].m_db[50] << std::endl;
-    std::cout << "***" << std::endl;*/
+    m_app->set_color_and_state(avg, avg, avg);
 }
 
 void guitar_sync_program::on_interrupt() {}
