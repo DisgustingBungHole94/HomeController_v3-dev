@@ -130,7 +130,7 @@ void guitar_sync_program::loop() {
     for (int i = 0; i < NUM_CHANNELS; i++) {
         for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
             m_channels[i].m_mag[j] = std::sqrt((m_channels[i].m_out[j][0] * m_channels[i].m_out[j][0]) + m_channels[i].m_out[j][1] * m_channels[i].m_out[j][1]);
-            m_channels[i].m_db[j] = (10.0f * std::log10(m_channels[i].m_mag[j] + 1.0));
+            //m_channels[i].m_db[j] = (10.0f * std::log10(m_channels[i].m_mag[j] + 1.0));
         }
     }
 
