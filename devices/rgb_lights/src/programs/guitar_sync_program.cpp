@@ -109,9 +109,9 @@ void guitar_sync_program::loop() {
         return;
     }
 
-    const std::size_t NUM_FRAMES = 128;
+    const std::size_t NUM_FRAMES = 128 * 2;
 
-    std::vector<char> buffer;
+    std::vector<short> buffer;
     buffer.resize(NUM_FRAMES * m_format_width / 8 * 2);
 
     if (snd_pcm_readi(m_capture_handle, &buffer[0], NUM_FRAMES) != NUM_FRAMES) {
@@ -130,7 +130,7 @@ void guitar_sync_program::loop() {
     for (int i = 0; i < NUM_CHANNELS; i++) {
         for (int j = 0; j < BUFFER_SIZE / 2 - 1; j++) {
             m_channels[i].m_mag[j] = std::sqrt((m_channels[i].m_out[j][0] * m_channels[i].m_out[j][0]) + m_channels[i].m_out[j][1] * m_channels[i].m_out[j][1]);
-            m_channels[i].m_db[j] = (10.0f * log10(m_channels[i].m_mag[j] + 1.0));
+            m_channels[i].m_db[j] = (10.0f * log10f(m_channels[i].m_mag[j] + 1.0));
         }
     }
 
