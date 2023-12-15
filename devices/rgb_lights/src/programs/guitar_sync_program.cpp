@@ -95,6 +95,8 @@ void guitar_sync_program::on_start() {
 }
 
 void guitar_sync_program::loop() {
+    std::cout << "." << std::endl;
+
     if (!m_init) {
         return;
     }
@@ -109,7 +111,6 @@ void guitar_sync_program::loop() {
         return;
     }
 
-    std::cout << "start" << std::endl;
     for (int i = 0; i < NUM_CHANNELS; i++) {
         for (int j = 0; j < NUM_FRAMES / sizeof(buffer[0]) / NUM_CHANNELS; j++) {
             m_channels[i].m_in[j] = buffer[j * NUM_CHANNELS * i];
@@ -117,7 +118,6 @@ void guitar_sync_program::loop() {
 
         fftw_execute(m_channels[i].m_p);
     }
-    std::cout << "end" << std::endl;
 
     for (int i = 0; i < NUM_CHANNELS; i++) {
         for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
@@ -133,7 +133,6 @@ void guitar_sync_program::loop() {
     avg /= BUFFER_SIZE / 2 + 1;
 
     std::cout << avg << std::endl;
-    std::cout << "." << std::endl;
 }
 
 void guitar_sync_program::on_interrupt() {}
