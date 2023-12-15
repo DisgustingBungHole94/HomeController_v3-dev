@@ -141,11 +141,12 @@ void guitar_sync_program::loop() {
         avg += m_channels[1].m_db[j];
     }
 
-    avg /= BUFFER_SIZE / 2 -1;
+    avg /= BUFFER_SIZE / 2 - 1;
+    avg -= 15.0f;
 
-    std::cout << avg << std::endl;
-
+    avg = std::max(avg, 0.0f);
     avg = std::min(avg, 40.0f);
+    
     avg = (avg / 40.0f * 255.0f);
 
     m_app->set_color_and_state(avg, avg, avg);

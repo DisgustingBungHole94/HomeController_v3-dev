@@ -10,7 +10,7 @@ class rgb_lights;
 class guitar_sync_program : public program {
     public:
         guitar_sync_program() 
-            : m_init(false)    
+            : m_init(false), m_last_average(0.0f), m_ffts_since_last_average(0)    
         {}
 
         ~guitar_sync_program() {}
@@ -39,4 +39,7 @@ class guitar_sync_program : public program {
 
         snd_pcm_t* m_capture_handle;
         std::size_t m_format_width;
+
+        float m_last_average;
+        int m_ffts_since_last_average;
 };
