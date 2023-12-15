@@ -131,6 +131,7 @@ void guitar_sync_program::loop() {
     avg /= BUFFER_SIZE / 2 + 1;
 
     std::cout << avg << std::endl;
+    std::cout << "." << std::endl;
 }
 
 void guitar_sync_program::on_interrupt() {}
