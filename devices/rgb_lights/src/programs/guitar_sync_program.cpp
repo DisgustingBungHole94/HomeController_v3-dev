@@ -138,7 +138,7 @@ void guitar_sync_program::loop() {
     }
 
     float avg = 0.0f;
-    for (int j = 0; j < BUFFER_SIZE / 2 - 1; j++) {
+    for (int j = 10; j < BUFFER_SIZE / 2 - 10; j++) {
         avg += m_channels[1].m_db[j];
     }
 
@@ -167,10 +167,10 @@ void guitar_sync_program::loop() {
     std::cout << m_base_dbs << std::endl;
     std::cout << "***" << std::endl;
 
-    if (m_average - m_base_dbs < 3.0f) {
+    if (m_average - m_base_dbs < 1.5f) {
         m_app->set_color_and_state(0, 0, 0);
     } else {
-        uint8_t color_value = m_average / (m_base_dbs + 7.0f) * 255.0f;
+        uint8_t color_value = m_average / (m_base_dbs + 5.0f) * 255.0f;
         m_app->set_color_and_state(color_value, color_value, color_value);
     }
 }
