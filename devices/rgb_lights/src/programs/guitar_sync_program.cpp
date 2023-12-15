@@ -170,7 +170,7 @@ void guitar_sync_program::loop() {
     if (m_average - m_base_dbs < 1.5f) {
         m_app->set_color_and_state(0, 0, 0);
     } else {
-        uint8_t color_value = m_average / (m_base_dbs + 5.0f) * 255.0f;
+        uint8_t color_value = m_average / (m_base_dbs + 10.0f) * 255.0f;
         m_app->set_color_and_state(color_value, color_value, color_value);
     }
 }
