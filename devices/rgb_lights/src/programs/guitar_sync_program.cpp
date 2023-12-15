@@ -104,6 +104,7 @@ void guitar_sync_program::on_start() {
     }
 
     m_init = true;
+    m_base_dbs = 100.0f;
 }
 
 void guitar_sync_program::loop() {
