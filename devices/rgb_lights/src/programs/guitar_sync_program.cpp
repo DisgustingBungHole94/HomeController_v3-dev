@@ -136,14 +136,14 @@ void guitar_sync_program::loop() {
 
     std::cout << "6" << std::endl;
 
-    float avg = 0.0f;
+    /*float avg = 0.0f;
     for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
         avg += m_channels[1].m_db[j];
     }
     avg /= BUFFER_SIZE / 2 + 1;
 
     std::cout << avg << std::endl;
-    std::cout << "7" << std::endl;
+    std::cout << "7" << std::endl;*/
 }
 
 void guitar_sync_program::on_interrupt() {}
