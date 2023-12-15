@@ -32,7 +32,7 @@ class guitar_sync_program : public program {
             fftw_plan m_p;
 
             double m_mag[BUFFER_SIZE / 2 - 1];
-            int m_db[BUFFER_SIZE / 2 - 1];
+            double m_db[BUFFER_SIZE / 2 - 1];
         } m_channels[NUM_CHANNELS];
 
         bool m_init;
