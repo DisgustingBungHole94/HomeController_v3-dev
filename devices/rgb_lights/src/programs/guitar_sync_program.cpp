@@ -109,7 +109,6 @@ void guitar_sync_program::loop() {
         return;
     }
 
-    std::cout << "1" << std::endl;
     for (int i = 0; i < NUM_CHANNELS; i++) {
         for (int j = 0; j < NUM_FRAMES / sizeof(buffer[0]) / NUM_CHANNELS; j++) {
             m_channels[i].m_in[j] = buffer[j * NUM_CHANNELS * i];
@@ -117,27 +116,21 @@ void guitar_sync_program::loop() {
 
         fftw_execute(m_channels[i].m_p);
     }
-    std::cout << "2" << std::endl;
 
-    std::cout << "3" << std::endl;
     for (int i = 0; i < NUM_CHANNELS; i++) {
         for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
             m_channels[i].m_mag[j] = std::sqrt((m_channels[i].m_out[j][0] * m_channels[i].m_out[j][0]) + m_channels[i].m_out[j][1] * m_channels[i].m_out[j][1]);
+            m_channels[i].m_db[j] = (10.0f * std::log10(m_channels[i].m_mag[j] + 1.0));
         }
     }
 
-    std::cout << "4" << std::endl;
-    for (int i = 0; i < NUM_CHANNELS; i++) {
-        for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
-            if (j % 8) {
-                std::cout << std::endl;
-            }
-
-            std::cout << std::setprecision(5) << m_channels[i].m_mag[j];
-        }
+    float avg = 0.0f;
+    for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
+        avg += m_channels[1].m_db[j];
     }
+    avg /= BUFFER_SIZE / 2 + 1;
 
-    //std::cout << avg << std::endl;
+    std::cout << avg << std::endl;
 }
 
 void guitar_sync_program::on_interrupt() {}
