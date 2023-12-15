@@ -2,6 +2,7 @@
 
 #include "program.h"
 
+#include <vector>
 #include <alsa/asoundlib.h>
 #include <fftw3.h>
 
@@ -10,7 +11,7 @@ class rgb_lights;
 class guitar_sync_program : public program {
     public:
         guitar_sync_program() 
-            : m_init(false), m_base_dbs(0.0f), m_samples_since_update(0)
+            : m_init(false), m_base_dbs(0.0f), m_average(0.0f)
         {}
 
         ~guitar_sync_program() {}
@@ -41,5 +42,7 @@ class guitar_sync_program : public program {
         std::size_t m_format_width;
 
         float m_base_dbs;
-        int m_samples_since_update;
+
+        std::vector<float> m_samples;
+        float m_average;
 };

@@ -144,19 +144,30 @@ void guitar_sync_program::loop() {
 
     avg /= BUFFER_SIZE / 2 - 1;
 
-    if (avg < m_base_dbs) {
-        m_base_dbs = avg;
+    m_samples.push_back(avg);
+
+    if (m_samples.size() > 10) {
+        m_average = 0.0f;
+        for (int i = 0; i < m_samples.size(); i++) {
+            m_average += m_samples[i];
+        }
+        m_average /= m_samples.size();
+        m_samples.resize(0);
+    }
+
+    if (m_average < m_base_dbs) {
+        m_base_dbs = m_average;
     }
 
     std::cout << "***" << std::endl;
-    std::cout << avg << std::endl;
+    std::cout << m_average << std::endl;
     std::cout << m_base_dbs << std::endl;
     std::cout << "***" << std::endl;
 
-    if (avg - m_base_dbs < 7.0f) {
+    if (m_average - m_base_dbs < 7.0f) {
         m_app->set_color_and_state(0, 0, 0);
     } else {
-        uint8_t color_value = avg / (m_base_dbs + 15.0f) * 255.0f;
+        uint8_t color_value = m_average / (m_base_dbs + 15.0f) * 255.0f;
         m_app->set_color_and_state(color_value, color_value, color_value);
     }
 }
@@ -169,4 +180,10 @@ void guitar_sync_program::on_stop() {
     }
 
     snd_pcm_close(m_capture_handle);
+
+    for(int i = 0; i < NUM_CHANNELS; i++) {
+        fftw_free(m_channels[i].m_in);
+        fftw_free(m_channels[i].m_out);
+        fftw_destroy_plan(m_channels[i].m_p);
+    }
 }
