@@ -95,21 +95,27 @@ void guitar_sync_program::on_start() {
 }
 
 void guitar_sync_program::loop() {
-    //std::cout << (bool)m_init << std::endl;
+    std::cout << "1" << (bool)m_init << std::endl;
 
     if (!m_init) {
         return;
     }
+
+    std::cout << "2" << (bool)m_init << std::endl;
 
     const std::size_t NUM_FRAMES = 128 * 2;
 
     std::vector<char> buffer;
     buffer.resize(NUM_FRAMES * m_format_width / 8 * 2);
 
+    std::cout << "3" << (bool)m_init << std::endl;
+
     if (snd_pcm_readi(m_capture_handle, &buffer[0], NUM_FRAMES) != NUM_FRAMES) {
         hc::util::logger::err("guitar sync: read from audio device failed");
         return;
     }
+
+    std::cout << "4" << (bool)m_init << std::endl;
 
     for (int i = 0; i < NUM_CHANNELS; i++) {
         for (int j = 0; j < NUM_FRAMES / sizeof(buffer[0]) / NUM_CHANNELS; j++) {
@@ -119,12 +125,16 @@ void guitar_sync_program::loop() {
         fftw_execute(m_channels[i].m_p);
     }
 
+    std::cout << "5" << (bool)m_init << std::endl;
+
     for (int i = 0; i < NUM_CHANNELS; i++) {
         for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
             m_channels[i].m_mag[j] = std::sqrt((m_channels[i].m_out[j][0] * m_channels[i].m_out[j][0]) + m_channels[i].m_out[j][1] * m_channels[i].m_out[j][1]);
             m_channels[i].m_db[j] = (10.0f * std::log10(m_channels[i].m_mag[j] + 1.0));
         }
     }
+
+    std::cout << "6" << (bool)m_init << std::endl;
 
     /*float avg = 0.0f;
     for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
