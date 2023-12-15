@@ -4,11 +4,14 @@
 
 #include <vector>
 #include <iostream>
+#include <iomanip>
+#include <cmath>
+#include <ccomplex>
+#include <fftw3.h>
 
 void guitar_sync_program::on_start() {
     static const std::string DEVICE_NAME = "hw:1,0";
     unsigned int rate = 44100;
-    unsigned int num_channels = 2;
     snd_pcm_format_t format = SND_PCM_FORMAT_S16_LE;
 
     int res;
@@ -49,7 +52,7 @@ void guitar_sync_program::on_start() {
         return;
     }
 
-    if ((res = snd_pcm_hw_params_set_channels(m_capture_handle, hw_params, num_channels)) < 0) {
+    if ((res = snd_pcm_hw_params_set_channels(m_capture_handle, hw_params, NUM_CHANNELS)) < 0) {
         hc::util::logger::err("guitar sync: failed to set channel count");
         return;
     }
@@ -68,6 +71,26 @@ void guitar_sync_program::on_start() {
 
     hc::util::logger::log("guitar sync: audio device is ready!");
 
+    for (int i = 0; i < NUM_CHANNELS; i++) {
+        m_channels[i].m_in = (double*)fftw_malloc(sizeof(double) * BUFFER_SIZE);
+        if (!m_channels[i].m_in) {
+            hc::util::logger::err("guitar sync: failed to alloc fft in buffer");
+            return;
+        }
+
+        m_channels[i].m_out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * ((BUFFER_SIZE / 2) + 1));
+        if (!m_channels[i].m_out) {
+            hc::util::logger::err("guitar sync: failed to alloc fft out buffer");
+            return;
+        }
+
+        m_channels[i].m_p = fftw_plan_dft_r2c_1d(BUFFER_SIZE, m_channels[i].m_in, m_channels[i].m_out, FFTW_ESTIMATE);
+        if (!m_channels[i].m_p) {
+            hc::util::logger::err("guitar sync: failed to alloc fft p");
+            return;
+        }
+    }
+
     m_init = true;
 }
 
@@ -76,7 +99,7 @@ void guitar_sync_program::loop() {
         return;
     }
 
-    const std::size_t NUM_FRAMES = 128;
+    const std::size_t NUM_FRAMES = 128 * 2;
 
     std::vector<char> buffer;
     buffer.resize(NUM_FRAMES * m_format_width / 8 * 2);
@@ -86,13 +109,31 @@ void guitar_sync_program::loop() {
         return;
     }
 
-    int avg = 0;
-    for (std::size_t i = 0; i < buffer.size(); i++) {
-        avg += buffer[i];
-    }
-    avg /= buffer.size();
+    for (int i = 0; i < NUM_CHANNELS; i++) {
+        for (int j = 0; j < NUM_FRAMES / sizeof(buffer[0]) / NUM_CHANNELS; i++) {
+            m_channels[i].m_in[j] = buffer[j * NUM_CHANNELS * i];
+        }
 
-    std::cout << avg << std::endl;
+        fftw_execute(m_channels[i].m_p);
+    }
+
+    for (int i = 0; i < NUM_CHANNELS; i++) {
+        for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
+            m_channels[i].m_mag[j] = std::sqrt((m_channels[i].m_out[j][0] * m_channels[i].m_out[j][0]) + m_channels[i].m_out[j][1] * m_channels[i].m_out[j][1]);
+        }
+    }
+
+    for (int i = 0; i < NUM_CHANNELS; i++) {
+        for (int j = 0; j < BUFFER_SIZE / 2 + 1; j++) {
+            if (j % 8) {
+                std::cout << std::endl;
+            }
+
+            std::cout << std::setprecision(5) << m_channels[i].m_mag[j];
+        }
+    }
+
+    //std::cout << avg << std::endl;
 }
 
 void guitar_sync_program::on_interrupt() {}

@@ -17,6 +17,7 @@ LIBS += -lhomecontroller
 LIBS += -lrt
 LIBS += -lpigpio
 LIBS += -lasound
+LIBS += -lfftw3
 
 # programs
 _OBJECTS += programs/guitar_sync_program.o
