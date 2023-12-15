@@ -64,7 +64,7 @@ void guitar_sync_program::on_start() {
 
     if ((res = snd_pcm_hw_params_set_buffer_size(m_capture_handle, hw_params, (8192 * 2) >> 2)) < 0) {
         hc::util::logger::err("guitar sync: failed to set buffer size");
-        return
+        return;
     }
 
     if ((res = snd_pcm_hw_params(m_capture_handle, hw_params)) < 0) {
