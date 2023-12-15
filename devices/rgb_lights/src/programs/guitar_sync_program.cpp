@@ -109,7 +109,7 @@ void guitar_sync_program::loop() {
         return;
     }
 
-    const std::size_t NUM_FRAMES = 128 * 2;
+    const std::size_t NUM_FRAMES = 128;
 
     std::vector<char> buffer;
     buffer.resize(NUM_FRAMES * m_format_width / 8 * 2);
